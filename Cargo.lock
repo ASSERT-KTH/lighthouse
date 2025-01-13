@@ -4147,6 +4147,7 @@ dependencies = [
  "risc0-zkp",
  "risc0-zkvm",
  "risc0-zkvm-platform",
+ "safe_arith",
  "serde",
  "tracing-subscriber 0.3.19",
 ]
@@ -5968,6 +5969,7 @@ name = "methods"
 version = "0.1.0"
 dependencies = [
  "risc0-build",
+ "safe_arith",
 ]
 
 [[package]]
