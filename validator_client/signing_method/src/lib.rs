@@ -7,16 +7,49 @@ use eth2_keystore::Keystore;
 use lockfile::Lockfile;
 use parking_lot::Mutex;
 use reqwest::{header::ACCEPT, Client};
+use serde_utils::hex;
 use std::path::PathBuf;
+use tokio::process::Command;
+use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::task;
 use std::sync::Arc;
 use task_executor::TaskExecutor;
 use types::*;
 use url::Url;
 use web3signer::{ForkInfo, SigningRequest, SigningResponse};
 
+
 pub use web3signer::Web3SignerObject;
 
+
+
 mod web3signer;
+
+
+
+type Callback = Arc<dyn Fn(String) + Send + Sync>;
+
+async fn run_command(cmd: &str, args: &[&str], callback: Callback) {
+
+    let mut child = Command::new(cmd)
+            .env("RISC0_WORK_DIR", "/risc0workdir")
+            .args(args)
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .spawn()
+            .expect("error while running async command");
+
+    if let Some(stdout) = child.stdout.take() {
+        let mut reader = BufReader::new(stdout).lines();
+
+        while let Some(line) = reader.next_line().await.expect("error while reading async process stdout") {
+            callback(format!("[{}] Async process exited with {}", cmd, line));
+        }
+    }
+
+    let status = child.wait().await.expect("failed to wait on async task");
+    callback(format!("[{}] Process exited with {}", cmd, status));
+}
 
 #[derive(Debug, PartialEq)]
 pub enum Error {
@@ -152,6 +185,7 @@ impl SigningMethod {
             genesis_validators_root,
         });
 
+
         self.get_signature_from_root(signable_message, signing_root, executor, fork_info)
             .await
     }
@@ -173,6 +207,29 @@ impl SigningMethod {
                 let voting_keypair = voting_keypair.clone();
                 // Spawn a blocking task to produce the signature. This avoids blocking the core
                 // tokio executor.
+
+                if let SignableMessage::BeaconBlock(_block) = signable_message {
+
+                    let pk_bytes = voting_keypair.sk.serialize();
+
+                    let callback: Callback = Arc::new(|message: String| {
+                        println!("Callback received {}", message);
+                    });
+
+                    task::spawn(async move {
+                        //TODO: Here we can spawn a parallel process for signature proving!
+                        let bytes = pk_bytes.as_bytes();
+                        let hex_str = hex::encode(bytes).clone();
+                        println!("HERE WE GO: Command::new(\"/lighthouse/target/debug/host\").args(&hex_str])");
+                        println!("PRIVATE KEY: {}", hex_str);
+
+                        let hex_str_c = hex::encode(bytes);
+                        let hex_str_d = hex_str_c.as_str();
+                        let input = &[hex_str_d];
+                        run_command("/lighthouse/target/debug/host", input, callback).await;
+                        });
+                }
+
                 let signature = executor
                     .spawn_blocking_handle(
                         move || voting_keypair.sk.sign(signing_root),

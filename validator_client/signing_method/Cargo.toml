@@ -15,3 +15,4 @@ url = { workspace = true }
 validator_metrics = { workspace = true }
 serde = { workspace = true }
 ethereum_serde_utils = { workspace = true }
+tokio = { workspace = true }

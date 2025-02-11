@@ -41,7 +41,8 @@ while getopts "e:b:n:phck" flag; do
   esac
 done
 
-LH_IMAGE_NAME=$(yq eval ".participants[0].cl_image" $NETWORK_PARAMS_FILE)
+LH_IMAGE_NAME=$(sudo yq eval ".participants[0].cl_image" $NETWORK_PARAMS_FILE)
+
 
 if ! command -v docker &> /dev/null; then
     echo "Docker is not installed. Please install Docker and try again."

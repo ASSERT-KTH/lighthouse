@@ -9,6 +9,7 @@ use slot_clock::SlotClock;
 use std::fmt::Debug;
 use std::future::Future;
 use std::ops::Deref;
+use std::process::Command;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::mpsc;
@@ -335,21 +336,28 @@ impl<T: SlotClock + 'static, E: EthSpec> BlockService<T, E> {
         let log = self.context.log();
         let signing_timer = validator_metrics::start_timer(&validator_metrics::BLOCK_SIGNING_TIMES);
 
+        debug!(log, "signing block!");
+
         let res = match unsigned_block {
             UnsignedBlock::Full(block_contents) => {
+                debug!(log, "signing full block!");
                 let (block, maybe_blobs) = block_contents.deconstruct();
                 self.validator_store
                     .sign_block(*validator_pubkey, block, slot)
                     .await
                     .map(|b| SignedBlock::Full(PublishBlockRequest::new(Arc::new(b), maybe_blobs)))
             }
-            UnsignedBlock::Blinded(block) => self
-                .validator_store
-                .sign_block(*validator_pubkey, block, slot)
-                .await
-                .map(Arc::new)
-                .map(SignedBlock::Blinded),
+            UnsignedBlock::Blinded(block) => {
+                debug!(log, "signing blinded block!");
+                self.validator_store
+                    .sign_block(*validator_pubkey, block, slot)
+                    .await
+                    .map(Arc::new)
+                    .map(SignedBlock::Blinded)
+            }
         };
+
+
 
         let signed_block = match res {
             Ok(block) => block,
