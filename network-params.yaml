@@ -1,0 +1,19 @@
+participants:
+  - el_type: geth
+    cl_type: lighthouse
+  - el_type: geth
+    cl_type: lighthouse
+  - el_type: geth
+    cl_type: lighthouse
+    cl_image: assert/lighthouse:latest # our image here
+    validator_count: 1
+
+network_params:
+    # network: "vdc-testnet"
+    # network_id: "455327"
+    num_validator_keys_per_node: 32
+
+
+additional_services:
+    - dora
+    - tx_spammer

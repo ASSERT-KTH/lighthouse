@@ -1,3 +1,23 @@
+# ASSERT Proof of execution prototype
+
+To update docker image after modifing client, host, or guest:
+
+```bash
+# Replace `<tag>` with your own, and update `network-params.yaml`.
+docker build -t assert/lighthouse:<tag> .
+```
+
+
+To run testnet:
+
+```bash
+# replace <name> with your own enclave identifier.
+kurtosis run --enclave <name> github.com/ethpandaops/ethereum-package --args-file network-params.yaml
+```
+
+=========================================
+
+
 # Lighthouse: Ethereum consensus client
 
 An open-source Ethereum consensus client, written in Rust and maintained by Sigma Prime.
