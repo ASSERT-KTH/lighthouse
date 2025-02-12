@@ -1,6 +1,6 @@
 # ASSERT Proof of execution prototype
 
-To update docker image after modifing client, host, or guest:
+To update docker image after modifying client, host, or guest:
 
 ```bash
 # Replace `<tag>` with your own, and update `network-params.yaml`.
@@ -12,7 +12,23 @@ To run testnet:
 
 ```bash
 # replace <name> with your own enclave identifier.
-kurtosis run --enclave <name> github.com/ethpandaops/ethereum-package --args-file network-params.yaml
+kurtosis run --enclave <enclave-name> github.com/ethpandaops/ethereum-package --args-file network-params.yaml
+# If there are duplicated enclave name.
+kurtosis enclave rm <enclave-name>
+```
+
+List all the encalves/instance：
+
+```bash
+kurtosis enclave ls
+docker ps
+docker logs -f <CONTAINER ID>
+```
+
+To Stop the testnet:
+
+```bash
+kurtosis enclave stop <enclave-name>
 ```
 
 =========================================
