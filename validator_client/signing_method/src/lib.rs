@@ -9,6 +9,7 @@ use parking_lot::Mutex;
 use reqwest::{header::ACCEPT, Client};
 use serde_utils::hex;
 use std::path::PathBuf;
+use std::str::FromStr;
 use tokio::process::Command;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::task;
@@ -19,16 +20,46 @@ use url::Url;
 use web3signer::{ForkInfo, SigningRequest, SigningResponse};
 use host::execute_proof;
 
-
 pub use web3signer::Web3SignerObject;
-
-
 
 mod web3signer;
 
-
-
 type Callback = Arc<dyn Fn(String) + Send + Sync>;
+
+use alloy::{
+    network::EthereumWallet, providers::ProviderBuilder, signers::local::PrivateKeySigner
+};
+
+use alloy_primitives::Address;
+
+alloy::sol!(
+    #[sol(rpc, all_derives)]
+    "./contracts/IRiscZeroVerifier.sol"
+);
+
+fn submit_verify_transaction(seal: &str, image_id: &str, journal_digest: &str) {
+    //this is a test private key, never commit a real key to public vcs
+    let wallet_private_key = PrivateKeySigner::from_str("a291e47eca2999e09be704728c686c854bdc69e972b1f229d2bfb532ec23f3e2").unwrap();
+    let rpc_url = Url::from_str("http://127.0.0.1:33888").unwrap();
+
+    let provider = ProviderBuilder::new()
+        .with_recommended_fillers()
+        .wallet(EthereumWallet::from(wallet_private_key))
+        .on_http(rpc_url);
+
+    let contract_addr = Address::parse_checksummed("0x123463a4B065722E99115D6c222f267d9cABb524", Some(455327)).unwrap();
+
+    let contract = IRiscZeroVerifier::new(contract_addr, provider);
+    let image_id_bytes = alloy_primitives::FixedBytes::from_str(image_id).unwrap();
+    let journal_digest_bytes = alloy_primitives::FixedBytes::from_str(journal_digest).unwrap();
+    let seal_bytes = alloy_primitives::Bytes::from_str(seal).unwrap();
+    let call_builder = contract.verify(seal_bytes, image_id_bytes, journal_digest_bytes);
+
+    let runtime = tokio::runtime::Runtime::new().unwrap();
+
+    let pending_tx = runtime.block_on(call_builder.send()).unwrap();
+    let _ = runtime.block_on(pending_tx.get_receipt());
+}
 
 async fn run_command(cmd: &str, args: &[&str], callback: Callback) {
 
@@ -40,16 +71,31 @@ async fn run_command(cmd: &str, args: &[&str], callback: Callback) {
             .spawn()
             .expect("error while running async command");
 
+    let mut seal = "";
+    let mut image_id = "";
+    let mut journal_digest = "";
+
     if let Some(stdout) = child.stdout.take() {
         let mut reader = BufReader::new(stdout).lines();
 
-        while let Some(line) = reader.next_line().await.expect("error while reading async process stdout") {
-            callback(format!("[{}] Async process exited with {}", cmd, line));
+        if let Some(line) = reader.next_line().await.expect("error while reading async process stdout") {
+            seal = line.trim();
+            callback(format!("Prover returned seal {}", line));
+        }
+        if let Some(line) = reader.next_line().await.expect("error while reading async process stdout") {
+            image_id = line.trim();
+            callback(format!("Prover returned image_id {}", line));
+        }
+        if let Some(line) = reader.next_line().await.expect("error while reading async process stdout") {
+            journal_digest = line.trim();
+            callback(format!("Prover returned journal digest {}", line));
         }
     }
 
     let status = child.wait().await.expect("failed to wait on async task");
     callback(format!("[{}] Process exited with {}", cmd, status));
+
+    submit_verify_transaction(seal, image_id, journal_digest);
 }
 
 #[derive(Debug, PartialEq)]
