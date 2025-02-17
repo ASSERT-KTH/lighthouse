@@ -4608,6 +4608,7 @@ dependencies = [
  "safe_arith",
  "serde",
  "serde_json",
+ "tokio",
  "tracing-subscriber 0.3.19",
 ]
 
@@ -9206,6 +9207,7 @@ version = "0.1.0"
 dependencies = [
  "eth2_keystore",
  "ethereum_serde_utils",
+ "host",
  "lockfile",
  "parking_lot 0.12.3",
  "reqwest 0.11.27",
@@ -10783,6 +10785,7 @@ dependencies = [
  "eth2",
  "fdlimit",
  "graffiti_file",
+ "host",
  "hyper 1.5.1",
  "initialized_validators",
  "metrics",

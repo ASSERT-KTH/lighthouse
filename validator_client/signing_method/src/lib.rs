@@ -17,6 +17,7 @@ use task_executor::TaskExecutor;
 use types::*;
 use url::Url;
 use web3signer::{ForkInfo, SigningRequest, SigningResponse};
+use host::execute_proof;
 
 
 pub use web3signer::Web3SignerObject;
@@ -212,12 +213,12 @@ impl SigningMethod {
 
                     let pk_bytes = voting_keypair.sk.serialize();
 
-                    let callback: Callback = Arc::new(|message: String| {
-                        println!("Callback received {}", message);
-                    });
-
+                    // let callback: Callback = Arc::new(|message: String| {
+                    //     println!("Callback received {}", message);
+                    // });
+                    println!("hzy-test111111111111111111111111111111");
                     task::spawn(async move {
-                        //TODO: Here we can spawn a parallel process for signature proving!
+                        // TODO: Here we can spawn a parallel process for signature proving!
                         let bytes = pk_bytes.as_bytes();
                         let hex_str = hex::encode(bytes).clone();
                         println!("HERE WE GO: Command::new(\"/lighthouse/target/debug/host\").args(&hex_str])");
@@ -225,9 +226,15 @@ impl SigningMethod {
 
                         let hex_str_c = hex::encode(bytes);
                         let hex_str_d = hex_str_c.as_str();
-                        let input = &[hex_str_d];
-                        run_command("/lighthouse/target/debug/host", input, callback).await;
-                        });
+                        // let input = "0x12344"
+                        // run_command("/lighthouse/target/debug/host", input, callback).await;
+                        // let input = &[hex_str_d];
+                        // let pk_hex = input[0].clone();
+                        match execute_proof(hex_str_d).await {
+                            Ok(_) => println!("Proof executed successfully"),
+                            Err(e) => eprintln!("Failed to execute proof: {}", e),
+                        }
+                    });
                 }
 
                 let signature = executor

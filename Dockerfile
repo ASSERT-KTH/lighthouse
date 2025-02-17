@@ -3,7 +3,7 @@ RUN apt-get update && apt-get -y upgrade && apt-get install -y cmake libclang-de
 RUN curl -L https://risczero.com/install | bash
 ENV PATH="$PATH:/root/.risc0/bin"
 RUN mkdir -p "$HOME/.cargo/bin"
-RUN rzup install cargo-risczero v1.2.1
+RUN rzup install cargo-risczero 1.2.1
 ENV PATH="$PATH:/root/.cargo/bin"
 RUN cargo risczero install
 COPY . lighthouse
@@ -14,7 +14,7 @@ ENV FEATURES=$FEATURES
 ENV PROFILE=$PROFILE
 ENV CARGO_NET_GIT_FETCH_WITH_CLI=$CARGO_USE_GIT_CLI
 RUN cd lighthouse && make
-RUN cd lighthouse && cargo build --bin host
+
 
 FROM ubuntu:22.04
 RUN apt-get update && apt-get -y upgrade && apt-get install -y --no-install-recommends \
@@ -34,3 +34,4 @@ ENV PATH="$PATH:/root/.cargo/bin"
 COPY --from=builder /usr/local/cargo/bin/lighthouse /usr/local/bin/lighthouse
 RUN mkdir lighthouse
 COPY --from=builder /lighthouse/target /lighthouse/target
+ENV RISC0_WORK_DIR="/risc0workdir"

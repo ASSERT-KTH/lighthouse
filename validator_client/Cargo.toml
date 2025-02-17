@@ -12,6 +12,7 @@ path = "src/lib.rs"
 tokio = { workspace = true }
 
 [dependencies]
+host = { workspace = true }
 account_utils = { workspace = true }
 beacon_node_fallback = { workspace = true }
 clap = { workspace = true }
