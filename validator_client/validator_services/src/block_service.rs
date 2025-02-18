@@ -9,7 +9,6 @@ use slot_clock::SlotClock;
 use std::fmt::Debug;
 use std::future::Future;
 use std::ops::Deref;
-use std::process::Command;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::mpsc;

@@ -10,11 +10,10 @@ participants:
 
 network_params:
     # network: "vdc-testnet"
-    # network_id: "455327"
+    network_id: "455327"
     num_validator_keys_per_node: 32
 
 network_params:
-    prefunded_accounts: '{" 0xf027174E59c85318ecF87597430281B291d9eA7E": {"balance": "10000ETH"}}'
     additional_preloaded_contracts: '{
         "0x123463a4B065722E99115D6c222f267d9cABb524":
         {
@@ -24,8 +23,16 @@ network_params:
             nonce: 0,
             secretKey: "0x",}
         }'
+    prefunded_accounts: '{"0xf027174E59c85318ecF87597430281B291d9eA7E": {"balance": "10000ETH"}}'
+
+
 
 additional_services:
     - dora
     - tx_spammer
     - blockscout
+
+port_publisher:
+    el:
+      enabled: true
+      public_port_start: 32000
