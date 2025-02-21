@@ -1,14 +1,24 @@
-use std::io::Read;
-
+use blst::min_pk::SecretKey;
 use risc0_zkvm::guest::env;
 
 fn main() {
-    let mut input_key = String::new();
-    env::stdin().read_to_string(&mut input_key).unwrap();
+    let mut intro = [0u8; 4];
+    env::read_slice(&mut intro);
 
-    env::commit(&input_key);
+    let mut secret_key = [0u8; 32];
+    env::read_slice(&mut secret_key);
+
+    let mut msg = [0u8; 32];
+    env::read_slice(&mut msg);
+
+    let sk = SecretKey::from_bytes(&secret_key).unwrap();
+
+    let dst = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
+
+    let sig = sk.sign(&msg, dst, &[]);
+
+    let serialized = sig.to_bytes();
+
+    env::commit_slice(&serialized);
 }
-
-
-
 

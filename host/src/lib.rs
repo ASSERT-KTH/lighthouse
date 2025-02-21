@@ -56,7 +56,7 @@ pub fn u32_array_to_hex_string(arr: &[u32]) -> String {
         .join("")
 }
 
-pub async fn execute_proof(pk_hex: &str) -> Result<ProofData, Box<dyn std::error::Error>> {
+pub async fn execute_proof(pk_hex: &[u8], msg: &[u8; 32]) -> Result<ProofData, Box<dyn std::error::Error>> {
     // Initialize tracing.
     // tracing_subscriber::fmt()
     //     .with_env_filter(tracing_subscriber::filter::EnvFilter::from_default_env())
@@ -65,6 +65,8 @@ pub async fn execute_proof(pk_hex: &str) -> Result<ProofData, Box<dyn std::error
 
     let exec_env = ExecutorEnv::builder()
     .write(&pk_hex)
+    .unwrap()
+    .write(&msg)
     .unwrap()
     .build()
     .unwrap();
@@ -78,7 +80,7 @@ pub async fn execute_proof(pk_hex: &str) -> Result<ProofData, Box<dyn std::error
     // This struct contains the receipt along with statistics about execution of the guest
 
 
-    println!("workspace: {:?}", std::env::current_dir().unwrap());
+    //println!("workspace: {:?}", std::env::current_dir().unwrap());
     println!("GUEST_ADDR: {}", HELLO_GUEST_PATH);
     println!("GUEST_ELF length: {}", HELLO_GUEST_ELF.len());
     println!("GUEST_ELF_ID length: {}", HELLO_GUEST_ID.len());

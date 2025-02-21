@@ -7,7 +7,6 @@ use eth2_keystore::Keystore;
 use lockfile::Lockfile;
 use parking_lot::Mutex;
 use reqwest::{header::ACCEPT, Client};
-use serde_utils::hex;
 use std::path::PathBuf;
 use tokio::task;
 use std::sync::Arc;
@@ -179,27 +178,16 @@ impl SigningMethod {
                 // tokio executor.
 
                 if let SignableMessage::BeaconBlock(_block) = signable_message {
-
-                    let pk_bytes = voting_keypair.sk.serialize();
+                    let sk_bytes = voting_keypair.sk.serialize();
 
                     // let callback: Callback = Arc::new(|message: String| {
                     //     println!("Callback received {}", message);
                     // });
-                    println!("hzy-test111111111111111111111111111111");
                     task::spawn(async move {
+                        let sk = sk_bytes.as_bytes();
                         // TODO: Here we can spawn a parallel process for signature proving!
-                        let bytes = pk_bytes.as_bytes();
-                        let hex_str = hex::encode(bytes).clone();
-                        println!("HERE WE GO: Command::new(\"/lighthouse/target/debug/host\").args(&hex_str])");
-                        println!("PRIVATE KEY: {}", hex_str);
 
-                        let hex_str_c = hex::encode(bytes);
-                        let hex_str_d = hex_str_c.as_str();
-                        // let input = "0x12344"
-                        // run_command("/lighthouse/target/debug/host", input, callback).await;
-                        // let input = &[hex_str_d];
-                        // let pk_hex = input[0].clone();
-                        let p = match execute_proof(hex_str_d).await {
+                        let p = match execute_proof(sk, &signing_root).await {
                             Ok(proof) => {
                                 println!("Proof executed successfully");
                                 Ok(proof)
