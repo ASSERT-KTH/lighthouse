@@ -10,6 +10,8 @@ docker build -t assert/lighthouse:<tag> .
 
 To run testnet:
 
+To run the testnet you need to build and install our own hacked version of Kurtosis, which allows us to run docker-in-docker: [https://github.com/ASSERT-KTH/kurtosis]
+
 ```bash
 # replace <name> with your own enclave identifier.
 kurtosis run --enclave <enclave-name> github.com/ethpandaops/ethereum-package --args-file network-params.yaml
