@@ -4,7 +4,7 @@ use std::process::exit;
 use alloy_primitives::FixedBytes;
 use host::{execute_proof, submit_verify_transaction};
 use tokio::task;
-use hex::decode;
+use alloy_primitives::hex::decode;
 
 #[tokio::main]
 async fn main() {

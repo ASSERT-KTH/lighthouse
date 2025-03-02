@@ -91,6 +91,7 @@ fn main() {
         std::env::set_var("RUST_BACKTRACE", "1");
     }
 
+
     // Parse the CLI parameters.
     let cli = Command::new("Lighthouse")
         .version(SHORT_VERSION.as_str())
@@ -424,7 +425,7 @@ fn main() {
     }
 
     let result = get_eth2_network_config(&matches).and_then(|eth2_network_config| {
-        let eth_spec_id = eth2_network_config.eth_spec_id()?;
+        let eth_spec_id: EthSpecId = eth2_network_config.eth_spec_id()?;
 
         // boot node subcommand circumvents the environment
         if let Some(bootnode_matches) = matches.subcommand_matches("boot_node") {
