@@ -59,6 +59,10 @@ impl_common!(Slot);
 impl_common!(Epoch);
 
 impl Slot {
+    pub fn value(&self) -> u64 {
+        self.0
+    }
+
     pub const fn new(slot: u64) -> Slot {
         Slot(slot)
     }
@@ -75,6 +79,11 @@ impl Slot {
 }
 
 impl Epoch {
+
+    pub fn value(&self) -> u64 {
+        self.0
+    }
+
     pub const fn new(epoch: u64) -> Epoch {
         Epoch(epoch)
     }

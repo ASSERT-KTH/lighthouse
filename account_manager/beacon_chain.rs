@@ -127,7 +127,6 @@ use types::blob_sidecar::FixedBlobSidecarList;
 use types::data_column_sidecar::{ColumnIndex, DataColumnIdentifier};
 use types::payload::BlockProductionVersion;
 use types::*;
-use hzys_produce_attestation::{set_finalized_slot,set_headslot,set_beacon_block_root,set_beacon_state_root,set_beacon_block_root_head,set_target_block_root,set_head_epoch,set_head_current_epoch_attesting_info, Slot as HzysSlot,Epoch as HzysEpoch, Checkpoint as HzysCheckpoint};
 
 pub type ForkChoiceError = fork_choice::Error<crate::ForkChoiceStoreError>;
 
@@ -1851,7 +1850,7 @@ impl<T: BeaconChainTypes> BeaconChain<T> {
             let head = self.head_snapshot();
             let head_state = &head.beacon_state;
             head_state_slot = head_state.slot();
-            // The head state is the state at the current head of the chain. It is used to
+
             // There is no value in producing an attestation to a block that is pre-finalization and
             // it is likely to cause expensive and pointless reads to the freezer database. Exit
             // early if this is the case.
@@ -1859,9 +1858,6 @@ impl<T: BeaconChainTypes> BeaconChain<T> {
                 .finalized_checkpoint()
                 .epoch
                 .start_slot(slots_per_epoch);
-
-            hzys_produce_attestation::set_finalized_slot(HzysSlot(finalized_slot.value()));
-
             if request_slot < finalized_slot {
                 return Err(Error::AttestingToFinalizedSlot {
                     finalized_slot,
@@ -1875,9 +1871,6 @@ impl<T: BeaconChainTypes> BeaconChain<T> {
             let slots_per_historical_root = T::EthSpec::slots_per_historical_root() as u64;
             let lowest_permissible_slot =
                 head_state.slot().saturating_sub(slots_per_historical_root);
-
-            hzys_produce_attestation::set_headslot(HzysSlot(head_state.slot().value()));
-
             if request_slot < lowest_permissible_slot {
                 return Err(Error::AttestingToAncientSlot {
                     lowest_permissible_slot,
@@ -1896,42 +1889,29 @@ impl<T: BeaconChainTypes> BeaconChain<T> {
                 beacon_state_root = *head_state.get_state_root(request_slot)?;
             };
 
-            hzys_produce_attestation::set_beacon_block_root_head(beacon_block_root.0);
-            hzys_produce_attestation::set_beacon_state_root(beacon_state_root.0);
-
             let target_slot = request_epoch.start_slot(T::EthSpec::slots_per_epoch());
             let target_root = if head_state.slot() <= target_slot {
                 // If the state is earlier than the target slot then the target *must* be the head
                 // block root.
                 beacon_block_root
             } else {
-                let block_root = *head_state.get_block_root(target_slot)?;
-                hzys_produce_attestation::set_target_block_root(block_root.0);
-                block_root
+                *head_state.get_block_root(target_slot)?
             };
-
-
             target = Checkpoint {
                 epoch: request_epoch,
                 root: target_root,
             };
 
-            hzys_produce_attestation::set_head_epoch(HzysEpoch(head_state.current_epoch().value()));
-
             current_epoch_attesting_info = if head_state.current_epoch() == request_epoch {
                 // When the head state is in the same epoch as the request, all the information
                 // required to attest is available on the head state.
-                let p1=head_state.current_justified_checkpoint();
-                let p2= head_state
-                .get_beacon_committee(request_slot, request_index)?
-                .committee
-                .len();
-
-                let hzyscheckpoint = HzysCheckpoint::new(HzysEpoch::new(p1.epoch.value()), p1.root.0);
-
-                hzys_produce_attestation::set_head_current_epoch_attesting_info(Some((hzyscheckpoint,p2)));
-
-                Some((p1,p2,))
+                Some((
+                    head_state.current_justified_checkpoint(),
+                    head_state
+                        .get_beacon_committee(request_slot, request_index)?
+                        .committee
+                        .len(),
+                ))
             } else {
                 // If the head state is in a *different* epoch to the request, more work is required
                 // to determine the justified checkpoint and committee length.

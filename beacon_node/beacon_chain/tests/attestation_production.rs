@@ -206,6 +206,7 @@ async fn produces_attestations() {
                 &AggregateSignature::infinity(),
                 "bad signature"
             );
+            
             assert_eq!(data.index, index, "bad index");
             assert_eq!(data.slot, slot, "bad slot");
             assert_eq!(data.beacon_block_root, block_root, "bad block root");

@@ -1787,6 +1787,7 @@ dependencies = [
  "futures",
  "genesis",
  "hex",
+ "hzys_produce_attestation",
  "int_to_bytes",
  "itertools 0.10.5",
  "kzg",
@@ -5061,7 +5062,10 @@ dependencies = [
  "alloy 0.9.2",
  "alloy-chains",
  "alloy-primitives",
+ "beacon_chain",
+ "bls",
  "borsh",
+ "hzys_produce_attestation",
  "methods",
  "risc0-binfmt",
  "risc0-build",
@@ -5073,8 +5077,10 @@ dependencies = [
  "safe_arith",
  "serde",
  "serde_json",
+ "state_processing",
  "tokio",
  "tracing-subscriber 0.3.19",
+ "types",
  "url",
 ]
 
@@ -5352,6 +5358,16 @@ dependencies = [
  "tokio",
  "tower-service",
  "tracing",
+]
+
+[[package]]
+name = "hzys_produce_attestation"
+version = "0.1.0"
+dependencies = [
+ "fixed_bytes",
+ "safe_arith",
+ "serde",
+ "slog",
 ]
 
 [[package]]

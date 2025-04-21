@@ -12,6 +12,7 @@ use beacon_chain::{
 use eth2::lighthouse::attestation_rewards::TotalAttestationRewards;
 use eth2::lighthouse::StandardAttestationRewards;
 use eth2::types::ValidatorId;
+use serde::Serialize;
 use state_processing::{BlockReplayError, BlockReplayer};
 use std::array::IntoIter;
 use std::collections::HashMap;
@@ -269,6 +270,8 @@ async fn test_rewards_base_multi_inclusion() {
                     .first()
                     .unwrap()
                     .clone();
+
+
                 attestations.push(attestation).unwrap();
             }),
         )

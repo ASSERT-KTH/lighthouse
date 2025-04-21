@@ -15,6 +15,8 @@ use types::*;
 use url::Url;
 use web3signer::{ForkInfo, SigningRequest, SigningResponse};
 use host::{execute_proof, submit_verify_transaction};
+use serde::Serialize;
+use serde::Deserialize;
 
 pub use web3signer::Web3SignerObject;
 

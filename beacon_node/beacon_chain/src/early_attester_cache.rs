@@ -7,6 +7,7 @@ use parking_lot::RwLock;
 use proto_array::Block as ProtoBlock;
 use std::sync::Arc;
 use types::*;
+use hzys_produce_attestation::{set_epoch,set_committee_count,set_committee_len,set_block_slot,ATTESTATION_BASE,Slot as HzysSlot,Epoch as HzysEpoch};
 
 pub struct CacheItem<E: EthSpec> {
     /*
@@ -109,9 +110,13 @@ impl<E: EthSpec> EarlyAttesterCache<E> {
             return Ok(None);
         }
 
+        hzys_produce_attestation::set_epoch(item.epoch.value());
+
         if request_slot < item.block.slot() {
             return Ok(None);
         }
+
+        hzys_produce_attestation::set_block_slot(item.block.slot().value());
 
         let committee_count = item
             .committee_lengths
@@ -120,9 +125,20 @@ impl<E: EthSpec> EarlyAttesterCache<E> {
             return Ok(None);
         }
 
+
+        hzys_produce_attestation::set_committee_count(committee_count);
+
         let committee_len =
             item.committee_lengths
                 .get_committee_length::<E>(request_slot, request_index, spec)?;
+
+        hzys_produce_attestation::set_committee_len(committee_len);
+
+        // hzys_produce_attestation::Electra_enabled=spec.fork_name_at_slot::<E>(request_slot).electra_enabled();
+
+        hzys_produce_attestation::Electra_enabled.with(|value| {
+            *value.borrow_mut() =spec.fork_name_at_slot::<E>(request_slot).electra_enabled();
+        });
 
         let attestation = Attestation::empty_for_signing(
             request_index,
@@ -135,8 +151,46 @@ impl<E: EthSpec> EarlyAttesterCache<E> {
         )
         .map_err(Error::AttestationError)?;
 
-        metrics::inc_counter(&metrics::BEACON_EARLY_ATTESTER_CACHE_HITS);
+        if spec.fork_name_at_slot::<E>(request_slot).electra_enabled() {
+            ATTESTATION_BASE.with(|base| {
+                let committee_bits_vec: Vec<bool> = match &attestation {
+                    Attestation::Base(base) => vec![],
+                    Attestation::Electra(electra) => electra.committee_bits.iter().collect::<Vec<_>>(),
+                };
+                base.borrow_mut().eelectra_committee_bits = committee_bits_vec;
+            });
+        }
 
+        ATTESTATION_BASE.with(|base| {
+            let aggregation_bits_vec: Vec<bool> = match &attestation {
+                Attestation::Base(base) => base.aggregation_bits.iter().collect(),
+                Attestation::Electra(electra) => electra.aggregation_bits.iter().collect(),
+            };
+            base.borrow_mut().aggregation_bits = aggregation_bits_vec;
+        });
+
+        ATTESTATION_BASE.with(|base| {
+            let signature:Vec<u8> = match &attestation {
+                Attestation::Base(base) => base.signature.serialize().to_vec(),
+                Attestation::Electra(electra) => electra.signature.serialize().to_vec(),
+            };
+            base.borrow_mut().signature = signature;
+        });
+
+        ATTESTATION_BASE.with(|base| {
+            let data = attestation.data();
+            base.borrow_mut().data.slot =  HzysSlot(data.slot.value());
+            base.borrow_mut().data.index = data.index;
+            base.borrow_mut().data.beacon_block_root = data.beacon_block_root.0;
+            base.borrow_mut().data.source.epoch = HzysEpoch(data.source.epoch.value());
+            base.borrow_mut().data.source.root = data.source.root.0;
+            base.borrow_mut().data.target.epoch = HzysEpoch(data.target.epoch.value());
+            base.borrow_mut().data.target.root = data.target.root.0;
+        });
+
+
+        // 设置全局变量中的 aggregation_bits
+        metrics::inc_counter(&metrics::BEACON_EARLY_ATTESTER_CACHE_HITS);
         Ok(Some(attestation))
     }
 

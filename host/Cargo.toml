@@ -22,3 +22,8 @@ alloy-chains = {version = "=0.1.57"}
 alloy = { workspace = true }
 alloy-primitives = { workspace = true }
 url = { workspace = true }
+state_processing = { workspace = true }
+beacon_chain = { workspace = true }
+bls = { workspace = true }
+types = { workspace = true }
+hzys_produce_attestation = {path ="../hzys_produce_attestation"}
