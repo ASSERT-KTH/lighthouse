@@ -204,9 +204,9 @@ dependencies = [
 
 [[package]]
 name = "alloy-primitives"
-version = "0.8.12"
+version = "0.8.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9fce5dbd6a4f118eecc4719eaa9c7ffc31c315e6c5ccde3642db927802312425"
+checksum = "8c77490fe91a0ce933a1f219029521f20fc28c2c0ca95d53fa4da9c00b8d9d4e"
 dependencies = [
  "alloy-rlp",
  "arbitrary",
@@ -214,11 +214,10 @@ dependencies = [
  "cfg-if",
  "const-hex",
  "derive_arbitrary",
- "derive_more 1.0.0",
+ "derive_more 2.0.1",
  "foldhash",
  "getrandom",
  "hashbrown 0.15.1",
- "hex-literal",
  "indexmap 2.6.0",
  "itoa",
  "k256 0.13.4",
@@ -228,7 +227,7 @@ dependencies = [
  "proptest-derive",
  "rand",
  "ruint",
- "rustc-hash 2.0.0",
+ "rustc-hash 2.1.1",
  "serde",
  "sha3 0.10.8",
  "tiny-keccak",
@@ -659,6 +658,28 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
 
 [[package]]
+name = "automata-sgx-sdk"
+version = "0.1.0"
+source = "git+https://github.com/automata-network/automata-sgx-sdk?branch=main#939894eae22d14200318c021e9c3b89f976eb2ca"
+dependencies = [
+ "automata-sgx-sdk-sysroot",
+ "base",
+ "cc",
+ "ctor",
+ "serde",
+ "serde_json",
+ "sgx-dcap-ql-rs",
+ "sgx_libc",
+ "sgx_tse",
+ "sgx_types",
+]
+
+[[package]]
+name = "automata-sgx-sdk-sysroot"
+version = "0.1.0"
+source = "git+https://github.com/automata-network/automata-sgx-sdk?branch=main#939894eae22d14200318c021e9c3b89f976eb2ca"
+
+[[package]]
 name = "axum"
 version = "0.7.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -726,6 +747,21 @@ dependencies = [
  "object",
  "rustc-demangle",
  "windows-targets 0.52.6",
+]
+
+[[package]]
+name = "base"
+version = "1.0.0"
+source = "git+https://github.com/automata-network/base-rs#55541c61ab4f18aacb0ed9347524f89689765dae"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "log",
+ "secp256k1",
+ "serde",
+ "serde_json",
+ "tokio",
+ "url",
 ]
 
 [[package]]
@@ -909,6 +945,29 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1f45e9417d87227c7a56d22e471c6206462cba514c7590c09aff4cf6d1ddcad"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "bindgen"
+version = "0.65.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cfdf7b466f9a4903edc73f95d6d2bcd5baf8ae620638762244d3f60143643cc5"
+dependencies = [
+ "bitflags 1.3.2",
+ "cexpr",
+ "clang-sys",
+ "lazy_static",
+ "lazycell",
+ "log",
+ "peeking_take_while",
+ "prettyplease",
+ "proc-macro2",
+ "quote",
+ "regex",
+ "rustc-hash 1.1.0",
+ "shlex",
+ "syn 2.0.89",
+ "which",
 ]
 
 [[package]]
@@ -1290,7 +1349,9 @@ checksum = "a21f936df1771bf62b77f047b726c4625ff2e8aa607c01ec06e5a05bd8463401"
 dependencies = [
  "android-tzdata",
  "iana-time-zone",
+ "js-sys",
  "num-traits",
+ "wasm-bindgen",
  "windows-targets 0.52.6",
 ]
 
@@ -1492,9 +1553,9 @@ dependencies = [
 
 [[package]]
 name = "const-hex"
-version = "1.13.2"
+version = "1.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "487981fa1af147182687064d0a2c336586d337a606595ced9ffb0c685c250c73"
+checksum = "4b0485bab839b018a8f1723fc5391819fea5f8f0f32288ef8a735fd096b6160c"
 dependencies = [
  "cfg-if",
  "cpufeatures",
@@ -1745,6 +1806,16 @@ checksum = "25fab6889090c8133f3deb8f73ba3c65a7f456f66436fc012a1b1e272b1e103e"
 dependencies = [
  "generic-array",
  "subtle",
+]
+
+[[package]]
+name = "ctor"
+version = "0.2.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "32a2785755761f3ddc1492979ce1e48d2c00d09311c39e4466429188f3dd6501"
+dependencies = [
+ "quote",
+ "syn 2.0.89",
 ]
 
 [[package]]
@@ -2057,7 +2128,16 @@ version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4a9b99b9cbbe49445b21764dc0625032a89b145a2642e67603e1c936f5458d05"
 dependencies = [
- "derive_more-impl",
+ "derive_more-impl 1.0.0",
+]
+
+[[package]]
+name = "derive_more"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "093242cf7570c207c83073cf82f79706fe7b8317e98620a47d5be7c3d8497678"
+dependencies = [
+ "derive_more-impl 2.0.1",
 ]
 
 [[package]]
@@ -2065,6 +2145,17 @@ name = "derive_more-impl"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cb7330aeadfbe296029522e6c40f315320aba36fc43a5b3632f3795348f3bd22"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.89",
+]
+
+[[package]]
+name = "derive_more-impl"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bda628edc44c4bb645fbe0f758797143e4e07926f7ebf4e9bdfbd3d2ce621df3"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2403,6 +2494,14 @@ dependencies = [
  "sec1 0.7.3",
  "subtle",
  "zeroize",
+]
+
+[[package]]
+name = "enclave"
+version = "0.1.0"
+dependencies = [
+ "automata-sgx-sdk",
+ "bls",
 ]
 
 [[package]]
@@ -3206,9 +3305,9 @@ checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 
 [[package]]
 name = "foldhash"
-version = "0.1.3"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f81ec6369c545a7d40e4589b5597581fa1c441fe1cce96dd1de43159910a36a2"
+checksum = "d9c4f5dac5e15c24eb999c26181a6ca40b39fe946cbe4c263c7209467bc83af2"
 
 [[package]]
 name = "foreign-types"
@@ -3737,12 +3836,6 @@ checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 dependencies = [
  "serde",
 ]
-
-[[package]]
-name = "hex-literal"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6fe2267d4ed49bc07b63801559be28c718ea06c4738b7a03c94df7386d2cde46"
 
 [[package]]
 name = "hex_fmt"
@@ -4337,7 +4430,7 @@ version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba6a270039626615617f3f36d15fc827041df3b78c439da2cadfa47455a77f2f"
 dependencies = [
- "parity-scale-codec 3.7.0",
+ "parity-scale-codec 3.6.12",
 ]
 
 [[package]]
@@ -5533,7 +5626,7 @@ name = "mdbx-sys"
 version = "0.11.6-4"
 source = "git+https://github.com/sigp/libmdbx-rs?rev=e6ff4b9377c1619bcf0bfdf52bee5a980a432a1a#e6ff4b9377c1619bcf0bfdf52bee5a980a432a1a"
 dependencies = [
- "bindgen",
+ "bindgen 0.69.5",
  "cc",
  "cmake",
  "libc",
@@ -5721,9 +5814,9 @@ checksum = "1fafa6961cabd9c63bcd77a45d7e3b7f3b552b70417831fb0f56db717e72407e"
 
 [[package]]
 name = "multiaddr"
-version = "0.18.2"
+version = "0.18.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe6351f60b488e04c1d21bc69e56b89cb3f5e8f5d22557d6e8031bdfd79b6961"
+checksum = "8b852bc02a2da5feed68cd14fa50d0774b92790a5bdbfa932a813926c8472070"
 dependencies = [
  "arrayref",
  "byteorder",
@@ -5734,7 +5827,7 @@ dependencies = [
  "percent-encoding",
  "serde",
  "static_assertions",
- "unsigned-varint 0.8.0",
+ "unsigned-varint 0.7.2",
  "url",
 ]
 
@@ -6251,16 +6344,15 @@ dependencies = [
 
 [[package]]
 name = "parity-scale-codec"
-version = "3.7.0"
+version = "3.6.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8be4817d39f3272f69c59fe05d0535ae6456c2dc2fa1ba02910296c7e0a5c590"
+checksum = "306800abfa29c7f16596b5970a588435e3d5b3149683d00c12b699cc19f895ee"
 dependencies = [
  "arrayvec",
  "bitvec 1.0.1",
  "byte-slice-cast",
  "impl-trait-for-tuples",
  "parity-scale-codec-derive 3.7.0",
- "rustversion",
  "serde",
 ]
 
@@ -6379,6 +6471,12 @@ dependencies = [
  "password-hash",
  "sha2 0.10.8",
 ]
+
+[[package]]
+name = "peeking_take_while"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "19b17cddbe7ec3f8bc800887bab5e717348c95ea2ca0b1bf0837fb964dc67099"
 
 [[package]]
 name = "pem"
@@ -6891,7 +6989,7 @@ dependencies = [
  "pin-project-lite",
  "quinn-proto",
  "quinn-udp",
- "rustc-hash 2.0.0",
+ "rustc-hash 2.1.1",
  "rustls 0.23.18",
  "socket2",
  "thiserror 2.0.3",
@@ -6909,7 +7007,7 @@ dependencies = [
  "getrandom",
  "rand",
  "ring 0.17.8",
- "rustc-hash 2.0.0",
+ "rustc-hash 2.1.1",
  "rustls 0.23.18",
  "rustls-pki-types",
  "slab",
@@ -7314,7 +7412,7 @@ dependencies = [
  "fastrlp",
  "num-bigint",
  "num-traits",
- "parity-scale-codec 3.7.0",
+ "parity-scale-codec 3.6.12",
  "primitive-types 0.12.2",
  "proptest",
  "rand",
@@ -7373,9 +7471,9 @@ checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
 name = "rustc-hash"
-version = "2.0.0"
+version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "583034fd73374156e66797ed8e5b0d5690409c9226b22d87cb7f19821c05d152"
+checksum = "357703d41365b4b27c590e3ed91eabb1b663f07c4c084095e60cbed4362dff0d"
 
 [[package]]
 name = "rustc-hex"
@@ -7590,7 +7688,7 @@ checksum = "346a3b32eba2640d17a9cb5927056b08f3de90f65b72fe09402c2ad07d684d0b"
 dependencies = [
  "cfg-if",
  "derive_more 1.0.0",
- "parity-scale-codec 3.7.0",
+ "parity-scale-codec 3.6.12",
  "scale-info-derive",
 ]
 
@@ -7687,6 +7785,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "secp256k1"
+version = "0.29.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9465315bc9d4566e1724f0fffcbcc446268cb522e60f9a27bcded6b19c108113"
+dependencies = [
+ "rand",
+ "secp256k1-sys",
+ "serde",
+]
+
+[[package]]
+name = "secp256k1-sys"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d4387882333d3aa8cb20530a17c69a3752e97837832f34f6dccc760e715001d9"
+dependencies = [
+ "cc",
+]
+
+[[package]]
 name = "security-framework"
 version = "2.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7752,9 +7870,9 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.215"
+version = "1.0.197"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6513c1ad0b11a9376da888e3e0baa0077f1aed55c17f50e7b2397136129fb88f"
+checksum = "3fb1c873e1b9b056a4dc4c0c198b24c3ffa059243875552b2bd0933b1aee4ce2"
 dependencies = [
  "serde_derive",
 ]
@@ -7771,9 +7889,9 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.215"
+version = "1.0.197"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ad1e866f866923f252f05c889987993144fb74e722403468a4ebd70c3cd756c0"
+checksum = "7eb0b34b42edc17f6b7cac84a52a1c5f0e1bb2227e997ca9011ea3dd34e8610b"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -7868,6 +7986,131 @@ dependencies = [
  "serde",
  "unsafe-libyaml",
 ]
+
+[[package]]
+name = "sgx-dcap-ql-rs"
+version = "0.1.0"
+source = "git+https://github.com/automata-network/SGXDataCenterAttestationPrimitives.git?branch=automata_sgx_builder#9bf847fe5479995acf6cfb612c016fac3078745b"
+dependencies = [
+ "sgx-dcap-ql-sys",
+]
+
+[[package]]
+name = "sgx-dcap-ql-sys"
+version = "0.1.0"
+source = "git+https://github.com/automata-network/SGXDataCenterAttestationPrimitives.git?branch=automata_sgx_builder#9bf847fe5479995acf6cfb612c016fac3078745b"
+dependencies = [
+ "bindgen 0.65.1",
+]
+
+[[package]]
+name = "sgx_build_helper"
+version = "2.0.0"
+source = "git+https://github.com/automata-network/incubator-teaclave-sgx-sdk?branch=2.24_nightly_2024-02-01#2e0b563d535af92719c00b367c005f90d6a0a430"
+
+[[package]]
+name = "sgx_crypto"
+version = "2.0.0"
+source = "git+https://github.com/automata-network/incubator-teaclave-sgx-sdk?branch=2.24_nightly_2024-02-01#2e0b563d535af92719c00b367c005f90d6a0a430"
+dependencies = [
+ "sgx_crypto_sys",
+ "sgx_trts",
+ "sgx_types",
+]
+
+[[package]]
+name = "sgx_crypto_sys"
+version = "2.0.0"
+source = "git+https://github.com/automata-network/incubator-teaclave-sgx-sdk?branch=2.24_nightly_2024-02-01#2e0b563d535af92719c00b367c005f90d6a0a430"
+dependencies = [
+ "sgx_build_helper",
+ "sgx_download_prebuilt",
+ "sgx_types",
+]
+
+[[package]]
+name = "sgx_download_prebuilt"
+version = "2.0.0"
+source = "git+https://github.com/automata-network/incubator-teaclave-sgx-sdk?branch=2.24_nightly_2024-02-01#2e0b563d535af92719c00b367c005f90d6a0a430"
+dependencies = [
+ "sgx_build_helper",
+]
+
+[[package]]
+name = "sgx_ffi"
+version = "2.0.0"
+source = "git+https://github.com/automata-network/incubator-teaclave-sgx-sdk?branch=2.24_nightly_2024-02-01#2e0b563d535af92719c00b367c005f90d6a0a430"
+dependencies = [
+ "sgx_types",
+]
+
+[[package]]
+name = "sgx_libc"
+version = "2.0.0"
+source = "git+https://github.com/automata-network/incubator-teaclave-sgx-sdk?branch=2.24_nightly_2024-02-01#2e0b563d535af92719c00b367c005f90d6a0a430"
+dependencies = [
+ "sgx_ffi",
+ "sgx_oc",
+ "sgx_sync",
+ "sgx_tlibc_sys",
+ "sgx_trts",
+ "sgx_types",
+]
+
+[[package]]
+name = "sgx_oc"
+version = "2.0.0"
+source = "git+https://github.com/automata-network/incubator-teaclave-sgx-sdk?branch=2.24_nightly_2024-02-01#2e0b563d535af92719c00b367c005f90d6a0a430"
+dependencies = [
+ "sgx_ffi",
+ "sgx_sync",
+ "sgx_trts",
+ "sgx_types",
+]
+
+[[package]]
+name = "sgx_sync"
+version = "2.0.0"
+source = "git+https://github.com/automata-network/incubator-teaclave-sgx-sdk?branch=2.24_nightly_2024-02-01#2e0b563d535af92719c00b367c005f90d6a0a430"
+dependencies = [
+ "sgx_trts",
+ "sgx_types",
+]
+
+[[package]]
+name = "sgx_tlibc_sys"
+version = "2.0.0"
+source = "git+https://github.com/automata-network/incubator-teaclave-sgx-sdk?branch=2.24_nightly_2024-02-01#2e0b563d535af92719c00b367c005f90d6a0a430"
+dependencies = [
+ "sgx_build_helper",
+ "sgx_download_prebuilt",
+ "sgx_types",
+]
+
+[[package]]
+name = "sgx_trts"
+version = "2.0.0"
+source = "git+https://github.com/automata-network/incubator-teaclave-sgx-sdk?branch=2.24_nightly_2024-02-01#2e0b563d535af92719c00b367c005f90d6a0a430"
+dependencies = [
+ "sgx_crypto_sys",
+ "sgx_tlibc_sys",
+ "sgx_types",
+]
+
+[[package]]
+name = "sgx_tse"
+version = "2.0.0"
+source = "git+https://github.com/automata-network/incubator-teaclave-sgx-sdk?branch=2.24_nightly_2024-02-01#2e0b563d535af92719c00b367c005f90d6a0a430"
+dependencies = [
+ "sgx_crypto",
+ "sgx_trts",
+ "sgx_types",
+]
+
+[[package]]
+name = "sgx_types"
+version = "2.0.0"
+source = "git+https://github.com/automata-network/incubator-teaclave-sgx-sdk?branch=2.24_nightly_2024-02-01#2e0b563d535af92719c00b367c005f90d6a0a430"
 
 [[package]]
 name = "sha1"
@@ -10405,7 +10648,7 @@ name = "xdelta3"
 version = "0.1.5"
 source = "git+http://github.com/sigp/xdelta3-rs?rev=50d63cdf1878e5cf3538e9aae5eed34a22c64e4a#50d63cdf1878e5cf3538e9aae5eed34a22c64e4a"
 dependencies = [
- "bindgen",
+ "bindgen 0.69.5",
  "cc",
  "futures-io",
  "futures-util",
