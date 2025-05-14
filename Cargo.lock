@@ -1770,7 +1770,6 @@ checksum = "8c3c1a368f70d6cf7302d78f8f7093da241fb8e8807c05cc9e51a125895a6d5b"
 name = "beacon_chain"
 version = "0.2.0"
 dependencies = [
- "alloy-primitives",
  "bitvec 1.0.1",
  "bls",
  "criterion",
@@ -1787,6 +1786,7 @@ dependencies = [
  "futures",
  "genesis",
  "hex",
+ "host",
  "int_to_bytes",
  "itertools 0.10.5",
  "kzg",
@@ -5070,7 +5070,6 @@ dependencies = [
  "risc0-zkp",
  "risc0-zkvm",
  "risc0-zkvm-platform",
- "safe_arith",
  "serde",
  "serde_json",
  "tokio",

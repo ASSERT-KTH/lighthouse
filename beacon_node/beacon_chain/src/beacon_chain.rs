@@ -1,3 +1,4 @@
+use host::execute_proof;
 use crate::attestation_verification::{
     batch_verify_aggregated_attestations, batch_verify_unaggregated_attestations,
     Error as AttestationError, VerifiedAggregatedAttestation, VerifiedAttestation,
