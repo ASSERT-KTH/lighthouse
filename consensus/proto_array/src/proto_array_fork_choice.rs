@@ -18,6 +18,7 @@ use types::{
     AttestationShufflingId, ChainSpec, Checkpoint, Epoch, EthSpec, ExecutionBlockHash,
     FixedBytesExtended, Hash256, Slot,
 };
+use hzys_produce_attestation::{ExecutionBlockHash as HzysExecutionBlockHash, ExecutionStatus as HzysExecutionStatus};
 
 pub const DEFAULT_PRUNE_THRESHOLD: usize = 256;
 
@@ -125,6 +126,21 @@ impl ExecutionStatus {
     /// - Does not have execution enabled (before or after Bellatrix fork)
     pub fn is_irrelevant(&self) -> bool {
         matches!(self, ExecutionStatus::Irrelevant(_))
+    }
+
+    pub fn to_hzys_execution_status(&self) -> HzysExecutionStatus {
+        match self {
+            ExecutionStatus::Valid(execution_block_hash) => {
+                HzysExecutionStatus::Valid(HzysExecutionBlockHash(execution_block_hash.0.0))
+            }
+            ExecutionStatus::Invalid(execution_block_hash) => {
+                HzysExecutionStatus::Invalid(HzysExecutionBlockHash(execution_block_hash.0.0))
+            }
+            ExecutionStatus::Optimistic(execution_block_hash) => {
+                HzysExecutionStatus::Optimistic(HzysExecutionBlockHash(execution_block_hash.0.0))
+            }
+            ExecutionStatus::Irrelevant(flag) => HzysExecutionStatus::Irrelevant(*flag),
+        }
     }
 }
 

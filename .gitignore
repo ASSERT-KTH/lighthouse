@@ -21,3 +21,5 @@ genesis.ssz
 methods/guest/Cargo.lock
 .gitignore
 methods/guest/Cargo.lock
+profile.pb
+.gitignore

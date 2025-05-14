@@ -9,21 +9,21 @@ tokio = { workspace = true }
 risc0-ethereum-contracts = { version = "=1.2.1" }
 risc0-zkvm = { version = "=1.2.1" }
 risc0-build = { version = "=1.2.1" }
-risc0-core = { version = "=1.2.1" }
-risc0-binfmt = { version = "=1.2.1" }
-risc0-zkp = { version = "=1.2.1" }
-risc0-zkvm-platform = { version = "=1.2.1" }
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+# risc0-core = { version = "2.0.0" }
+# risc0-binfmt = { version = "2.0.1" }
+# risc0-zkp = { version = "2.0.1" }
+# risc0-zkvm-platform = { version = "2.0.2" }
+# tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 serde = "1.0"
 serde_json = "1.0"
 safe_arith = { path = "../consensus/safe_arith" }
 borsh = "1.0"
-alloy-chains = {version = "=0.1.57"}
+alloy-chains = {version = "0.2.0"}
 alloy = { workspace = true }
 alloy-primitives = { workspace = true }
 url = { workspace = true }
 state_processing = { workspace = true }
-beacon_chain = { workspace = true }
+# beacon_chain = { workspace = true }
 bls = { workspace = true }
 types = { workspace = true }
 hzys_produce_attestation = {path ="../hzys_produce_attestation"}

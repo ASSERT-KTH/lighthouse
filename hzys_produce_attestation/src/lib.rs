@@ -2,6 +2,8 @@ use fixed_bytes;
 use safe_arith::{SafeArith};
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
+use std::collections::HashMap;
+
 
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Deserialize, Serialize)]
@@ -26,7 +28,7 @@ impl Slot {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Deserialize, Serialize, Copy)]
+#[derive(Debug, PartialEq, Clone, Deserialize, Serialize, Copy, Hash, Eq)]
 pub struct Epoch(pub u64);
 
 impl Epoch {
@@ -60,7 +62,7 @@ pub type CommitteeIndex = u64;
 pub type Hash256 = [u8; 32];
 
 
-#[derive(Debug, PartialEq, Clone, Deserialize, Serialize,Copy)]
+#[derive(Debug, PartialEq, Clone, Deserialize, Serialize,Copy, Hash, Eq)]
 pub struct Checkpoint {
     pub epoch: Epoch,
     pub root: Hash256,
@@ -72,12 +74,12 @@ impl Checkpoint {
     }
 }
 
-#[derive(Debug, PartialEq, Clone,Deserialize, Serialize,Copy)]
+#[derive(Debug, PartialEq, Clone,Deserialize, Serialize,Copy, Hash, Eq)]
 pub struct CommitteeLengths {
     /// The `epoch` to which the lengths pertain.
-    epoch: Epoch,
+    pub epoch: Epoch,
     /// The length of the shuffling in `self.epoch`.
-    active_validator_indices_len: usize,
+    pub active_validator_indices_len: usize,
 }
 
 #[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
@@ -311,7 +313,7 @@ thread_local! {
         });
     }
 
-#[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct HeadBeaconState {
     pub finalized_slot: Slot,
     pub headslot: Slot,
@@ -320,6 +322,9 @@ pub struct HeadBeaconState {
     pub target_block_root: Hash256,
     pub head_epoch: Epoch,
     pub head_current_epoch_attesting_info: Option<(Checkpoint, usize)>,
+    pub block_execution_status:Option<ExecutionStatus>,
+    pub cachevalue: Option<(Checkpoint, usize)>,
+    // pub attester_cache: AttesterCache,
 }
 
 impl HeadBeaconState {
@@ -351,6 +356,18 @@ impl HeadBeaconState {
     pub fn get_head_current_epoch_attesting_info(&self) -> Option<(Checkpoint, usize)> {
         self.head_current_epoch_attesting_info
     }
+
+    pub fn get_block_execution_status(&self) -> Option<ExecutionStatus> {
+        self.block_execution_status
+    }
+
+    pub fn get_cachevalue(&self) -> Option<(Checkpoint, usize)> {
+        self.cachevalue
+    }
+
+    // pub fn get_attester_cache(&self) -> &AttesterCache {
+    //     &self.attester_cache
+    // }
 }
 
 // global variable
@@ -365,7 +382,15 @@ thread_local! {
         head_current_epoch_attesting_info:Some((Checkpoint {
             epoch: Epoch(0),
             root: [0; 32],
-        }, 42))
+        }, 42)),
+        block_execution_status: None,
+        cachevalue: Some((Checkpoint {
+            epoch: Epoch(0),
+            root: [0; 32],
+        }, 42)),
+        // attester_cache: AttesterCache {
+        //     cache: HashMap::new(),
+        // },
     });
 }
 
@@ -411,6 +436,90 @@ pub fn set_head_current_epoch_attesting_info(info: Option<(Checkpoint, usize)>) 
     });
 }
 
+pub fn set_block_execution_status(status: Option<ExecutionStatus>) {
+    HEADBEACONSTATE.with(|base| {
+        base.borrow_mut().block_execution_status = status;
+    });
+}
+
+pub fn set_cachevalue(value: Option<(Checkpoint, usize)>) {
+    HEADBEACONSTATE.with(|base| {
+        base.borrow_mut().cachevalue = value;
+    });
+}
+
+
+// pub fn set_attester_cache(cache: AttesterCache) {
+//     HEADBEACONSTATE.with(|base| {
+//         base.borrow_mut().attester_cache = cache;
+//     });
+// }
+
+#[derive(Debug, PartialEq, Clone, Deserialize, Serialize, Hash, Eq)]
+pub struct AttesterCacheKey {
+    /// The epoch from which the justified checkpoint should be observed.
+    ///
+    /// Attestations which use `self.epoch` as `target.epoch` should use this key.
+    pub epoch: Epoch,
+    /// The root of the block at the last slot of `self.epoch - 1`.
+    pub decision_root: Hash256,
+}
+
+// global variable
+thread_local! {
+    pub static ATTESTER_CACHE_KEY: RefCell<AttesterCacheKey> = RefCell::new(AttesterCacheKey {
+        epoch: Epoch(0),
+        decision_root: [0; 32],
+    });
+}
+
+pub fn set_attester_cache_key(epoch: Epoch, decision_root: Hash256) {
+    ATTESTER_CACHE_KEY.with(|key| {
+        key.borrow_mut().epoch = epoch;
+        key.borrow_mut().decision_root = decision_root;
+    });
+}
+
+impl AttesterCacheKey {
+    pub fn get_attester_cache_key(&self) -> Self {
+        ATTESTER_CACHE_KEY.with(|key| {
+            key.borrow().clone()
+        })
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ExecutionBlockHash(pub Hash256);
+
+
+
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub enum ExecutionStatus {
+    /// An EL has determined that the payload is valid.
+    Valid(ExecutionBlockHash),
+    /// An EL has determined that the payload is invalid.
+    Invalid(ExecutionBlockHash),
+    /// An EL has not yet verified the execution payload.
+    Optimistic(ExecutionBlockHash),
+    /// The block is either prior to the merge fork, or after the merge fork but before the terminal
+    /// PoW block has been found.
+    ///
+    /// # Note:
+    ///
+    /// This `bool` only exists to satisfy our SSZ implementation which requires all variants
+    /// to have a value. It can be set to anything.
+    Irrelevant(bool),
+    NoneError,
+}
+
+impl ExecutionStatus {
+    pub fn is_valid_or_irrelevant(&self) -> bool {
+        matches!(
+            self,
+            ExecutionStatus::Valid(_) | ExecutionStatus::Irrelevant(_)
+        )
+    }
+}
 
 
 
@@ -424,8 +533,38 @@ pub enum Error {
         lowest_permissible_slot: Slot,
         request_slot: Slot,
     },
+    HeadBlockNotFullyVerified {
+        beacon_block_root: Hash256,
+        execution_status: ExecutionStatus,
+    },
+    HeadMissingFromForkChoice(Hash256),
+    CacheValueNotFound,
 }
 
+#[derive(Debug,PartialEq, Hash, Clone, Copy, Serialize, Deserialize)]
+pub struct AttesterCacheValue {
+    pub current_justified_checkpoint: Checkpoint,
+    pub committee_lengths: CommitteeLengths,
+}
+
+
+type CacheHashMap = HashMap<AttesterCacheKey, AttesterCacheValue>;
+
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AttesterCache {
+    cache: CacheHashMap,
+}
+
+impl AttesterCache {
+    pub fn new(param_cache: CacheHashMap) -> Self {
+        AttesterCache {
+            cache: param_cache,
+        }
+    }
+}
+
+#[inline(never)]
 pub fn hzys_produce_unaggregated_attestation(
     request_slot: Slot,
     request_index: CommitteeIndex,
@@ -433,6 +572,7 @@ pub fn hzys_produce_unaggregated_attestation(
     context_sepc: bool,
     context_attestation_base: &AttestationBase,
     context_beacon_state: &HeadBeaconState,
+    context_attester_cache_key: &AttesterCacheKey,
 )-> Result<Option<AttestationBase>, Error> {
 
     match  try_attest(request_slot, request_index, context_early_attester_cache, context_sepc,context_attestation_base){
@@ -451,58 +591,86 @@ pub fn hzys_produce_unaggregated_attestation(
     let beacon_state_root;
     let target;
     let current_epoch_attesting_info: Option<(Checkpoint, usize)>;
+    let attester_cache_key;
+    {
 
-    // let slots_per_epoch = 32;
-    // let request_epoch = request_slot.epoch(slots_per_epoch);
+        // let slots_per_epoch = 32;
+        // let request_epoch = request_slot.epoch(slots_per_epoch);
 
-    let finalized_slot = context_beacon_state.get_finalized_slot();
+        let finalized_slot = context_beacon_state.get_finalized_slot();
 
-    if request_slot < finalized_slot {
-        return Err(Error::AttestingToFinalizedSlot {
-            request_slot: request_slot,
-            finalized_slot: finalized_slot,
-        });
+        if request_slot < finalized_slot {
+            return Err(Error::AttestingToFinalizedSlot {
+                request_slot: request_slot,
+                finalized_slot: finalized_slot,
+            });
+        }
+
+        let slots_per_historical_root: u64 = 8192;
+        let headslot= context_beacon_state.get_headslot();
+        let lowest_permissible_slot =
+            headslot.saturating_sub(slots_per_historical_root);
+        if request_slot < lowest_permissible_slot {
+            return Err(Error::AttestingToAncientSlot {
+                lowest_permissible_slot,
+                request_slot,
+            });
+        }
+
+        if request_slot >= headslot {
+            beacon_block_root= context_beacon_state.get_beacon_block_root();
+            beacon_state_root= context_beacon_state.get_beacon_state_root();
+        }else{
+            beacon_block_root= context_beacon_state.get_beacon_block_root();
+            beacon_state_root= context_beacon_state.get_beacon_state_root();
+        }
+
+        let target_slot = request_epoch.start_slot(slots_per_epoch);
+        let target_root= if headslot<=target_slot{
+            beacon_block_root
+        }else{
+            context_beacon_state.get_target_block_root()
+        };
+
+        target = Checkpoint {
+            epoch: request_epoch,
+            root: target_root,
+        };
+
+        current_epoch_attesting_info = if context_beacon_state.get_head_epoch()==request_epoch{
+            context_beacon_state.get_head_current_epoch_attesting_info()
+        }else{
+            None
+        };
+
+        attester_cache_key = context_attester_cache_key.get_attester_cache_key();
     }
+        let block_execution_status = context_beacon_state.get_block_execution_status();
 
-    let slots_per_historical_root: u64 = 8192;
-    let headslot= context_beacon_state.get_headslot();
-    let lowest_permissible_slot =
-        headslot.saturating_sub(slots_per_historical_root);
-    if request_slot < lowest_permissible_slot {
-        return Err(Error::AttestingToAncientSlot {
-            lowest_permissible_slot,
-            request_slot,
-        });
-    }
+        match block_execution_status
+        {
+            Some(execution_status) if execution_status.is_valid_or_irrelevant() => (),
+            Some(execution_status) => {
+                return Err(Error::HeadBlockNotFullyVerified {
+                    beacon_block_root,
+                    execution_status:execution_status,
+                })
+            }
+            None => return Err(Error::HeadMissingFromForkChoice(beacon_block_root)),
+        };
 
-    if request_slot >= headslot {
-        beacon_block_root= context_beacon_state.get_beacon_block_root();
-        beacon_state_root= context_beacon_state.get_beacon_state_root();
-    }else{
-        beacon_block_root= context_beacon_state.get_beacon_block_root();
-        beacon_state_root= context_beacon_state.get_beacon_state_root();
-    }
-
-    let target_slot = request_epoch.start_slot(slots_per_epoch);
-    let target_root= if headslot<=target_slot{
-        beacon_block_root
-    }else{
-        context_beacon_state.get_target_block_root()
-    };
-
-    target = Checkpoint {
-        epoch: request_epoch,
-        root: target_root,
-    };
-
-    current_epoch_attesting_info = if context_beacon_state.get_head_epoch()==request_epoch{
-        context_beacon_state.get_head_current_epoch_attesting_info()
-    }else{
-        None
-    };
+        let (justified_checkpoint, committee_len) =
+        if let Some((justified_checkpoint, committee_len)) = current_epoch_attesting_info {
+            // The head state is in the same epoch as the attestation, so there is no more
+            // required information.
+            (justified_checkpoint, committee_len)
+        }else {
+            context_beacon_state.get_cachevalue().ok_or(Error::CacheValueNotFound)?
+        };
 
 
-    Ok(None)
+
+        Ok(Some(context_attestation_base.clone()))
 
 }
 

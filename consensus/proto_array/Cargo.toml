@@ -16,3 +16,4 @@ serde = { workspace = true }
 serde_yaml = { workspace = true }
 safe_arith = { workspace = true }
 superstruct = { workspace = true }
+hzys_produce_attestation = {path ="../../hzys_produce_attestation"}

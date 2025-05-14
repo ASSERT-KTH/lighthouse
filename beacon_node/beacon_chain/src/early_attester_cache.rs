@@ -7,7 +7,7 @@ use parking_lot::RwLock;
 use proto_array::Block as ProtoBlock;
 use std::sync::Arc;
 use types::*;
-use hzys_produce_attestation::{set_epoch,set_committee_count,set_committee_len,set_block_slot,ATTESTATION_BASE,Slot as HzysSlot,Epoch as HzysEpoch};
+use hzys_produce_attestation::{ATTESTATION_BASE,Slot as HzysSlot,Epoch as HzysEpoch};
 
 pub struct CacheItem<E: EthSpec> {
     /*
@@ -154,7 +154,7 @@ impl<E: EthSpec> EarlyAttesterCache<E> {
         if spec.fork_name_at_slot::<E>(request_slot).electra_enabled() {
             ATTESTATION_BASE.with(|base| {
                 let committee_bits_vec: Vec<bool> = match &attestation {
-                    Attestation::Base(base) => vec![],
+                    Attestation::Base(_base) => vec![],
                     Attestation::Electra(electra) => electra.committee_bits.iter().collect::<Vec<_>>(),
                 };
                 base.borrow_mut().eelectra_committee_bits = committee_bits_vec;

@@ -1,26 +1,28 @@
 use std::str::FromStr;
 use url::Url;
-use hzys_produce_attestation::{hzys_produce_unaggregated_attestation,Electra_enabled, CACHE_ITEM,ATTESTATION_BASE,Slot as HzysSlot,EarlyAttesterCache,CommitteeIndex,AttestationBase};
+//use risc0_ethereum_contracts::alloy::hex::ToHexExt;
+use risc0_ethereum_contracts::encode_seal;
+use hzys_produce_attestation::{hzys_produce_unaggregated_attestation,Electra_enabled, CACHE_ITEM,ATTESTATION_BASE,Slot as HzysSlot,EarlyAttesterCache,CommitteeIndex,AttestationBase,HeadBeaconState,AttesterCacheKey,HEADBEACONSTATE,ATTESTER_CACHE_KEY};
 use methods::{HELLO_GUEST_ELF, HELLO_GUEST_ID, HELLO_GUEST_PATH};
 use risc0_zkvm::{default_prover, sha::Digestible, ExecutorEnv, ProverOpts, VerifierContext};
-use risc0_ethereum_contracts::{alloy::hex::ToHexExt, encode_seal};
+use std::time::Instant;
 
-// use alloy::{
-//     network::EthereumWallet, providers::ProviderBuilder, signers::local::PrivateKeySigner
-// };
+use alloy::{
+     network::EthereumWallet, providers::ProviderBuilder, signers::local::PrivateKeySigner
+};
 
-// use alloy_primitives::Address;
+use alloy_primitives::Address;
 
-// alloy::sol!(
-//     #[sol(rpc, all_derives)]
-//     "./contracts/IRiscZeroVerifier.sol"
-// );
+alloy::sol!(
+    #[sol(rpc, all_derives)]
+    "./contracts/IRiscZeroVerifier.sol"
+);
 
-// pub struct ProofData {
-//     pub seal: String,
-//     pub journal_digest: String,
-//     pub elf_id: String,
-// }
+pub struct ProofData {
+    pub seal: String,
+    pub journal_digest: String,
+    pub elf_id: String,
+}
 
 // pub async fn submit_verify_transaction(proof_data: ProofData) -> String {
 //     //this is a test private key, never commit a real key to vcs
@@ -49,22 +51,51 @@ use risc0_ethereum_contracts::{alloy::hex::ToHexExt, encode_seal};
 //     //let _ = pending_tx.expect("error").get_receipt().await;
 // }
 
-// pub fn u32_array_to_hex_string(arr: &[u32]) -> String {
-//     arr.iter()
-//         .map(|&num| format!("{:08x}", num.to_be()))
-//         .collect::<Vec<String>>()
-//         .join("")
-// }
+pub fn u32_array_to_hex_string(arr: &[u32]) -> String {
+    arr.iter()
+        .map(|&num| format!("{:08x}", num.to_be()))
+        .collect::<Vec<String>>()
+        .join("")
+}
 
 
 
 pub async fn attestation_execute_proof(
     request_slot: HzysSlot,
     request_index: CommitteeIndex,
-    context_early_attester_cache: &EarlyAttesterCache,
-    context_sepc: bool,
-    context_attestation_base: &AttestationBase)
+   ) -> Result<ProofData, Box<dyn std::error::Error>>
 {
+
+    let context_early_attester_cache = CACHE_ITEM.with(|cache_item| {
+        let cache_item_ref = cache_item.borrow().clone(); // 获取 RefCell 的不可变引用并克隆
+
+        // 创建一个 EarlyAttesterCache 实例
+        EarlyAttesterCache {
+            item: Some(cache_item_ref),
+        }
+    });
+
+    let context_sepc_flag= Electra_enabled.with(|flag| {
+        let flag_ref = flag.borrow().clone(); // 获取 RefCell 的不可变引用并克隆
+        flag_ref
+    });
+
+    let context_attestation_base= ATTESTATION_BASE.with(|base| {
+        let base_ref = base.borrow().clone(); // 获取 RefCell 的不可变引用并克隆
+        base_ref
+    });
+
+    let context_beacon_state=HEADBEACONSTATE.with(|base| {
+        let base_ref = base.borrow().clone();
+        base_ref
+    });
+
+    let context_attester_cache_key =  ATTESTER_CACHE_KEY.with(|base| {
+        let base_ref = base.borrow().clone();
+        base_ref
+    });
+
+
     let Parm_slot = request_slot.clone();
 
     let exec_env = ExecutorEnv::builder()
@@ -74,9 +105,13 @@ pub async fn attestation_execute_proof(
     .unwrap()
     .write(&context_early_attester_cache)
     .unwrap()
-    .write(&context_sepc)
+    .write(&context_sepc_flag)
     .unwrap()
     .write(&context_attestation_base)
+    .unwrap()
+    .write(& context_beacon_state)
+    .unwrap()
+    .write(&context_attester_cache_key)
     .unwrap()
     .build()
     .unwrap();
@@ -94,6 +129,7 @@ pub async fn attestation_execute_proof(
     println!("GUEST_ADDR: {}", HELLO_GUEST_PATH);
     println!("GUEST_ELF length: {}", HELLO_GUEST_ELF.len());
     println!("GUEST_ELF_ID length: {}", HELLO_GUEST_ID.len());
+    let start_time = Instant::now();
     let prove_info = prover
         .prove_with_ctx(
             exec_env,
@@ -103,20 +139,37 @@ pub async fn attestation_execute_proof(
         )
         .unwrap();
 
+        let elapsed_time = start_time.elapsed(); // 计算耗时
+        println!("Execution time: {:.2?}", elapsed_time);
+
     // extract the receipt.
     let receipt = prove_info.receipt;
 
     // For example:
-    //let output: u32 = receipt.journal.decode().unwrap_or_else(|error| {
+    // let output: u32 = receipt.journal.decode().unwrap_or_else(|error| {
     //    eprintln!("Failed to open the file: {}", error);
     //    std::process::exit(1); // Gracefully exit the program
-    //});
+    // });
 
-    let encoded = encode_seal(&receipt).unwrap().encode_hex();
-    let journal = receipt.journal.bytes.clone();
-    let journal_digest = journal.digest().encode_hex();
+    // let encoded = encode_seal(&receipt).unwrap().encode_hex();
+    // let journal = receipt.journal.bytes.clone();
+    // let journal_digest = journal.digest().encode_hex();
 
-    println!("I generated a proof of execution! {} is a public output from journal ", encoded);
+    // println!("I generated a proof of execution! {} is a public output from journal ", encoded);
+    // let p = ProofData {
+    //     seal: encoded,
+    //     elf_id: u32_array_to_hex_string(&HELLO_GUEST_ID),
+    //     journal_digest
+    // };
+    // Ok(p)
+
+    let p1 = ProofData {
+        seal: String::from("example_seal"),
+        journal_digest: String::from("example_digest"),
+        elf_id: String::from("example_elf_id"),
+    };
+
+    Ok(p1)
 
 }
 

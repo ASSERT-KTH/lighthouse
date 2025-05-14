@@ -53,6 +53,7 @@ alloy-rlp = { version = "0.3.4", features = ["derive"] }
 milhouse = { workspace = true }
 rpds = { workspace = true }
 fixed_bytes = { workspace = true }
+hzys_produce_attestation = {path ="../../hzys_produce_attestation"}
 
 [dev-dependencies]
 criterion = { workspace = true }

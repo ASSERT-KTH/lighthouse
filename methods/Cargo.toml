@@ -3,13 +3,9 @@ name = "methods"
 version = "0.1.0"
 edition = "2021"
 
-members = [
-    "consensus/safe_arith",
-]
 
 [build-dependencies]
 risc0-build = { version = "=1.2.1" }
-safe_arith = { path = "../consensus/safe_arith" }
 
 [package.metadata.risc0]
 methods = ["guest"]

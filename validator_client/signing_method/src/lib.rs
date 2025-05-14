@@ -14,7 +14,7 @@ use task_executor::TaskExecutor;
 use types::*;
 use url::Url;
 use web3signer::{ForkInfo, SigningRequest, SigningResponse};
-use host::{execute_proof, submit_verify_transaction};
+// use host::{execute_proof, submit_verify_transaction};
 use serde::Serialize;
 use serde::Deserialize;
 
@@ -179,34 +179,34 @@ impl SigningMethod {
                 // Spawn a blocking task to produce the signature. This avoids blocking the core
                 // tokio executor.
 
-                if let SignableMessage::BeaconBlock(_block) = signable_message {
-                    let sk_bytes = voting_keypair.sk.serialize();
+                // if let SignableMessage::BeaconBlock(_block) = signable_message {
+                //     let sk_bytes = voting_keypair.sk.serialize();
 
-                    // let callback: Callback = Arc::new(|message: String| {
-                    //     println!("Callback received {}", message);
-                    // });
-                    task::spawn(async move {
-                        let sk = sk_bytes.as_bytes();
-                        // TODO: Here we can spawn a parallel process for signature proving!
+                //     // let callback: Callback = Arc::new(|message: String| {
+                //     //     println!("Callback received {}", message);
+                //     // });
+                //     task::spawn(async move {
+                //         let sk = sk_bytes.as_bytes();
+                //         // TODO: Here we can spawn a parallel process for signature proving!
 
-                        let p = match execute_proof(sk, &signing_root).await {
-                            Ok(proof) => {
-                                println!("Proof executed successfully");
-                                Ok(proof)
-                            }
-                            Err(e) => {
-                                eprintln!("Failed to execute proof: {}", e);
-                                Err(e)
-                            }
-                        };
+                //         let p = match execute_proof(sk, &signing_root).await {
+                //             Ok(proof) => {
+                //                 println!("Proof executed successfully");
+                //                 Ok(proof)
+                //             }
+                //             Err(e) => {
+                //                 eprintln!("Failed to execute proof: {}", e);
+                //                 Err(e)
+                //             }
+                //         };
 
-                        let proof = p.unwrap();
+                //         let proof = p.unwrap();
 
-                        let tx_hash = submit_verify_transaction(proof).await;
-                        println!("submitted verification with tx_hash: {}", tx_hash);
+                //         let tx_hash = submit_verify_transaction(proof).await;
+                //         println!("submitted verification with tx_hash: {}", tx_hash);
 
-                    });
-                }
+                //     });
+                // }
 
                 let signature = executor
                     .spawn_blocking_handle(

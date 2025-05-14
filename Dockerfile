@@ -29,7 +29,7 @@ ENV PATH="/root/.cargo/bin:$PATH"
 RUN curl -L https://risczero.com/install | bash
 ENV PATH="$PATH:/root/.risc0/bin"
 RUN mkdir -p "$HOME/.cargo/bin"
-RUN rzup install cargo-risczero v1.2.1
+RUN rzup install cargo-risczero 1.2.1
 ENV PATH="$PATH:/root/.cargo/bin"
 COPY --from=builder /usr/local/cargo/bin/lighthouse /usr/local/bin/lighthouse
 RUN mkdir lighthouse

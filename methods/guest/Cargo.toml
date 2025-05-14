@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 risc0-zkvm = { version = "=1.2.1", default-features = false, features = ['std'] }
-blst = { version = "0.3.3" }
+# blst = { version = "0.3.3" }
 hzys_produce_attestation={path="../../hzys_produce_attestation"}
 serde = { version = "1", features = ["derive"] }
 # alloy-primitives = { version = "0.8", features = ["rlp", "getrandom"] }

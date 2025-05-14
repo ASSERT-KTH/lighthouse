@@ -130,7 +130,7 @@ use types::payload::BlockProductionVersion;
 use types::*;
 // use hzys_produce_attestation::{set_finalized_slot,set_headslot,set_beacon_block_root,set_beacon_state_root,set_beacon_block_root_head,set_target_block_root,set_head_epoch,set_head_current_epoch_attesting_info,set_attester_cache_key,set_block_execution_status,set_cachevalue,ATTESTATION_BASE, Slot as HzysSlot,Epoch as HzysEpoch, Checkpoint as HzysCheckpoint};
 use hzys_produce_attestation::{ATTESTATION_BASE, Slot as HzysSlot,Epoch as HzysEpoch, Checkpoint as HzysCheckpoint};
-use host::attestation_execute_proof;
+//use host::attestation_execute_proof;
 
 pub type ForkChoiceError = fork_choice::Error<crate::ForkChoiceStoreError>;
 
