@@ -1,6 +1,6 @@
 use std::str::FromStr;
 use url::Url;
-//use risc0_ethereum_contracts::alloy::hex::ToHexExt;
+use risc0_ethereum_contracts::alloy::hex::ToHexExt;
 use risc0_ethereum_contracts::encode_seal;
 use hzys_produce_attestation::{hzys_produce_unaggregated_attestation,Electra_enabled, CACHE_ITEM,ATTESTATION_BASE,Slot as HzysSlot,EarlyAttesterCache,CommitteeIndex,AttestationBase,HeadBeaconState,AttesterCacheKey,HEADBEACONSTATE,ATTESTER_CACHE_KEY};
 use methods::{HELLO_GUEST_ELF, HELLO_GUEST_ID, HELLO_GUEST_PATH};
@@ -8,7 +8,7 @@ use risc0_zkvm::{default_prover, sha::Digestible, ExecutorEnv, ProverOpts, Verif
 use std::time::Instant;
 
 use alloy::{
-     network::EthereumWallet, providers::ProviderBuilder, signers::local::PrivateKeySigner
+    network::EthereumWallet, providers::ProviderBuilder, signers::local::PrivateKeySigner
 };
 
 use alloy_primitives::Address;
@@ -18,38 +18,39 @@ alloy::sol!(
     "./contracts/IRiscZeroVerifier.sol"
 );
 
+#[derive( Clone)]
 pub struct ProofData {
     pub seal: String,
     pub journal_digest: String,
     pub elf_id: String,
 }
 
-// pub async fn submit_verify_transaction(proof_data: ProofData) -> String {
-//     //this is a test private key, never commit a real key to vcs
-//     let wallet_private_key = PrivateKeySigner::from_str("a291e47eca2999e09be704728c686c854bdc69e972b1f229d2bfb532ec23f3e2").unwrap();
-//     //using docker interface
-//     let rpc_url = Url::from_str("http://172.17.0.1:32002").unwrap();
+pub async fn submit_verify_transaction(proof_data: ProofData) -> String {
+    //this is a test private key, never commit a real key to vcs
+    let wallet_private_key = PrivateKeySigner::from_str("a291e47eca2999e09be704728c686c854bdc69e972b1f229d2bfb532ec23f3e2").unwrap();
+    //using docker interface
+    let rpc_url = Url::from_str("http://172.17.0.1:32002").unwrap();
 
-//     let provider = ProviderBuilder::new()
-//         .with_recommended_fillers()
-//         .wallet(EthereumWallet::from(wallet_private_key))
-//         .on_http(rpc_url);
+    let provider = ProviderBuilder::new()
+        .with_recommended_fillers()
+        .wallet(EthereumWallet::from(wallet_private_key))
+        .on_http(rpc_url);
 
-//     let contract_addr = Address::parse_checksummed("0x123463a4B065722E99115D6c222f267d9cABb524", None).unwrap();
+    let contract_addr = Address::parse_checksummed("0x123463a4B065722E99115D6c222f267d9cABb524", None).unwrap();
 
-//     let contract = IRiscZeroVerifier::new(contract_addr, provider);
-//     let image_id_bytes = alloy_primitives::FixedBytes::from_str(proof_data.elf_id.as_str()).unwrap();
-//     let journal_digest_bytes = alloy_primitives::FixedBytes::from_str(proof_data.journal_digest.as_str()).unwrap();
-//     let seal_bytes = alloy_primitives::Bytes::from_str(proof_data.seal.as_str()).unwrap();
-//     let call_builder = contract.verify(seal_bytes, image_id_bytes, journal_digest_bytes);
+    let contract = IRiscZeroVerifier::new(contract_addr, provider);
+    let image_id_bytes = alloy_primitives::FixedBytes::from_str(proof_data.elf_id.as_str()).unwrap();
+    let journal_digest_bytes = alloy_primitives::FixedBytes::from_str(proof_data.journal_digest.as_str()).unwrap();
+    let seal_bytes = alloy_primitives::Bytes::from_str(proof_data.seal.as_str()).unwrap();
+    let call_builder = contract.verify(seal_bytes, image_id_bytes, journal_digest_bytes);
 
-//     //let handle = tokio::runtime::Handle::current();
+    //let handle = tokio::runtime::Handle::current();
 
-//     // let pending_tx = handle.block_on(call_builder.send()).unwrap();
-//     let pending_tx = call_builder.send().await.unwrap();
-//     pending_tx.tx_hash().encode_hex()
-//     //let _ = pending_tx.expect("error").get_receipt().await;
-// }
+    // let pending_tx = handle.block_on(call_builder.send()).unwrap();
+    let pending_tx = call_builder.send().await.unwrap();
+    pending_tx.tx_hash().encode_hex()
+    //let _ = pending_tx.expect("error").get_receipt().await;
+}
 
 pub fn u32_array_to_hex_string(arr: &[u32]) -> String {
     arr.iter()
@@ -63,37 +64,13 @@ pub fn u32_array_to_hex_string(arr: &[u32]) -> String {
 pub async fn attestation_execute_proof(
     request_slot: HzysSlot,
     request_index: CommitteeIndex,
+    context_early_attester_cache: EarlyAttesterCache,
+    context_sepc: bool,
+    context_attestation_base: AttestationBase,
+    context_beacon_state: HeadBeaconState,
+    context_attester_cache_key: AttesterCacheKey,
    ) -> Result<ProofData, Box<dyn std::error::Error>>
 {
-
-    let context_early_attester_cache = CACHE_ITEM.with(|cache_item| {
-        let cache_item_ref = cache_item.borrow().clone(); // 获取 RefCell 的不可变引用并克隆
-
-        // 创建一个 EarlyAttesterCache 实例
-        EarlyAttesterCache {
-            item: Some(cache_item_ref),
-        }
-    });
-
-    let context_sepc_flag= Electra_enabled.with(|flag| {
-        let flag_ref = flag.borrow().clone(); // 获取 RefCell 的不可变引用并克隆
-        flag_ref
-    });
-
-    let context_attestation_base= ATTESTATION_BASE.with(|base| {
-        let base_ref = base.borrow().clone(); // 获取 RefCell 的不可变引用并克隆
-        base_ref
-    });
-
-    let context_beacon_state=HEADBEACONSTATE.with(|base| {
-        let base_ref = base.borrow().clone();
-        base_ref
-    });
-
-    let context_attester_cache_key =  ATTESTER_CACHE_KEY.with(|base| {
-        let base_ref = base.borrow().clone();
-        base_ref
-    });
 
 
     let Parm_slot = request_slot.clone();
@@ -105,11 +82,11 @@ pub async fn attestation_execute_proof(
     .unwrap()
     .write(&context_early_attester_cache)
     .unwrap()
-    .write(&context_sepc_flag)
+    .write(&context_sepc)
     .unwrap()
     .write(&context_attestation_base)
     .unwrap()
-    .write(& context_beacon_state)
+    .write(&context_beacon_state)
     .unwrap()
     .write(&context_attester_cache_key)
     .unwrap()
@@ -139,37 +116,40 @@ pub async fn attestation_execute_proof(
         )
         .unwrap();
 
-        let elapsed_time = start_time.elapsed(); // 计算耗时
+        let elapsed_time = start_time.elapsed(); // calculate elapsed time
         println!("Execution time: {:.2?}", elapsed_time);
 
     // extract the receipt.
     let receipt = prove_info.receipt;
 
     // For example:
-    // let output: u32 = receipt.journal.decode().unwrap_or_else(|error| {
-    //    eprintln!("Failed to open the file: {}", error);
-    //    std::process::exit(1); // Gracefully exit the program
-    // });
+    let output: u32 = receipt.journal.decode().unwrap_or_else(|error| {
+       eprintln!("Failed to open the file: {}", error);
+       std::process::exit(1); // Gracefully exit the program
+    });
 
-    // let encoded = encode_seal(&receipt).unwrap().encode_hex();
-    // let journal = receipt.journal.bytes.clone();
-    // let journal_digest = journal.digest().encode_hex();
+    let encoded = encode_seal(&receipt).unwrap().encode_hex();
+    let journal = receipt.journal.bytes.clone();
+    let journal_digest = journal.digest().encode_hex();
 
-    // println!("I generated a proof of execution! {} is a public output from journal ", encoded);
-    // let p = ProofData {
-    //     seal: encoded,
-    //     elf_id: u32_array_to_hex_string(&HELLO_GUEST_ID),
-    //     journal_digest
-    // };
-    // Ok(p)
-
-    let p1 = ProofData {
-        seal: String::from("example_seal"),
-        journal_digest: String::from("example_digest"),
-        elf_id: String::from("example_elf_id"),
+    println!("I generated a proof of execution! {} is a public output from journal ", encoded);
+    let p = ProofData {
+        seal: encoded,
+        elf_id: u32_array_to_hex_string(&HELLO_GUEST_ID),
+        journal_digest
     };
 
-    Ok(p1)
+
+
+    Ok(p)
+
+    // let p1 = ProofData {
+    //     seal: String::from("example_seal"),
+    //     journal_digest: String::from("example_digest"),
+    //     elf_id: String::from("example_elf_id"),
+    // };
+
+    // Ok(p1)
 
 }
 

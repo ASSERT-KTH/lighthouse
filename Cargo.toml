@@ -3,6 +3,7 @@ members = [
     "host",
     "methods",
     "hzys_produce_attestation",
+    "hzystest",
 
     "beacon_node",
     "beacon_node/beacon_chain",
@@ -277,6 +278,7 @@ xdelta3 = { git = "http://github.com/sigp/xdelta3-rs", rev = "50d63cdf1878e5cf35
 zstd = "0.13"
 host = { path = "./host" }
 hzys_produce_attestation = { path = "./hzys_produce_attestation" }
+hzystest = { path = "./hzystest" }
 
 [profile.maxperf]
 inherits = "release"

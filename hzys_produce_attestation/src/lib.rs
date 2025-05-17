@@ -1,5 +1,4 @@
 use fixed_bytes;
-use safe_arith::{SafeArith};
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::collections::HashMap;

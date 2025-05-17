@@ -23,7 +23,7 @@ fn main() {
     );
 
     let end = env::cycle_count();
-    // env::commit(&Hzys_spec_flag);
+    env::commit(&Hzys_spec_flag);
     eprintln!("my_operation_to_measure: {}", end - start);
 }
 

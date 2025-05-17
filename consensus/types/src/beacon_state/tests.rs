@@ -10,6 +10,8 @@ use ssz::Encode;
 use std::ops::Mul;
 use std::sync::LazyLock;
 use swap_or_not_shuffle::compute_shuffled_index;
+use std::thread;
+use std::time::Duration;
 
 pub const MAX_VALIDATOR_COUNT: usize = 129;
 pub const SLOT_OFFSET: Slot = Slot::new(1);
@@ -109,6 +111,40 @@ async fn test_beacon_proposer_index<E: EthSpec>() {
 #[tokio::test]
 async fn beacon_proposer_index() {
     test_beacon_proposer_index::<MinimalEthSpec>().await;
+}
+
+#[tokio::test]
+async fn zheyuanstest() {
+     //Produce 2 epochs, or 64 blocks
+    let num_blocks_produced = MainnetEthSpec::slots_per_epoch() * 2;
+    let validators_keypairs =
+    generate_deterministic_keypairs(100);
+
+    let harness = BeaconChainHarness::builder(MainnetEthSpec)
+        .default_spec()
+        .keypairs(validators_keypairs)
+        .fresh_ephemeral_store()
+        .mock_execution_layer()
+        .build();
+    harness.advance_slot();
+
+    let chain = &harness.chain;
+    let current_slot = chain.slot().expect("should get slot");
+    let mut valid_attestation = chain
+    .produce_unaggregated_attestation(current_slot, 0)
+    .expect("should not error while producing attestation");
+
+
+    print!("slot:{}\nIndex:{}\nsource:{}\ntarget:{}\n ", valid_attestation.data().slot, valid_attestation.data().index,valid_attestation.data().source.epoch, valid_attestation.data().target.epoch);
+
+    thread::sleep(Duration::from_secs(120));
+
+    // attestation_execute_proof
+    // (
+    //     HzysSlot::new(current_slot.value()),
+    //     0,
+    // ).await;
+
 }
 
 /// Test that

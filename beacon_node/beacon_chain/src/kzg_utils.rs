@@ -167,8 +167,8 @@ pub fn blobs_to_data_column_sidecars<E: EthSpec>(
     let blob_cells_and_proofs_vec = blobs
         .into_par_iter()
         .map(|blob| {
-            let blob = blob
-                .as_ref()
+            let b1: &[u8] = blob.as_ref();
+            let blob = b1
                 .try_into()
                 .expect("blob should have a guaranteed size due to FixedVector");
             kzg.compute_cells_and_proofs(blob)

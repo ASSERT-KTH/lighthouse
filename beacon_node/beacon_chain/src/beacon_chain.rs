@@ -129,8 +129,8 @@ use types::data_column_sidecar::{ColumnIndex, DataColumnIdentifier};
 use types::payload::BlockProductionVersion;
 use types::*;
 // use hzys_produce_attestation::{set_finalized_slot,set_headslot,set_beacon_block_root,set_beacon_state_root,set_beacon_block_root_head,set_target_block_root,set_head_epoch,set_head_current_epoch_attesting_info,set_attester_cache_key,set_block_execution_status,set_cachevalue,ATTESTATION_BASE, Slot as HzysSlot,Epoch as HzysEpoch, Checkpoint as HzysCheckpoint};
-use hzys_produce_attestation::{ATTESTATION_BASE, Slot as HzysSlot,Epoch as HzysEpoch, Checkpoint as HzysCheckpoint};
-use host::attestation_execute_proof;
+use hzys_produce_attestation::{hzys_produce_unaggregated_attestation,Electra_enabled, CACHE_ITEM,ATTESTATION_BASE,Slot as HzysSlot,Epoch as HzysEpoch, Checkpoint as HzysCheckpoint,EarlyAttesterCache as HzysEarlyAttesterCache,CommitteeIndex,AttestationBase,HeadBeaconState,HEADBEACONSTATE,ATTESTER_CACHE_KEY};
+use host::{attestation_execute_proof,submit_verify_transaction};
 
 pub type ForkChoiceError = fork_choice::Error<crate::ForkChoiceStoreError>;
 
@@ -1803,26 +1803,65 @@ impl<T: BeaconChainTypes> BeaconChain<T> {
         request_index: CommitteeIndex,
     ) -> Result<Attestation<T::EthSpec>, Error> {
 
+          println!("hzysdebuginfo: lighthousefunc-produce_unaggregated_attestation");
 
-        // let prooftask = move || {
-        //     task::spawn(async move {
-        //         let p = match attestation_execute_proof(HzysSlot::new(request_slot.value()), request_index).await {
-        //             Ok(proof) => {
-        //                 println!("Proof executed successfully");
-        //                 Ok(proof)
-        //             }
-        //             Err(e) => {
-        //                 eprintln!("Failed to execute proof: {}", e);
-        //                 Err(e)
-        //             }
-        //         };
-        //     })
-        // };
+        let prooftask = move || {
+            let context_early_attester_cache = CACHE_ITEM.with(|cache_item| {
+                let cache_item_ref = cache_item.borrow().clone(); // 获取 RefCell 的不可变引用并克隆
+                HzysEarlyAttesterCache {
+                    item: Some(cache_item_ref),
+                }
+            });
+
+            let context_sepc_flag= Electra_enabled.with(|flag| {
+                let flag_ref = flag.borrow().clone(); // 获取 RefCell 的不可变引用并克隆
+                flag_ref
+            });
+
+            let context_attestation_base= ATTESTATION_BASE.with(|base| {
+                let base_ref = base.borrow().clone(); // 获取 RefCell 的不可变引用并克隆
+                base_ref
+            });
+
+            let context_beacon_state=HEADBEACONSTATE.with(|base| {
+                let base_ref = base.borrow().clone();
+                base_ref
+            });
+
+            let context_attester_cache_key =  ATTESTER_CACHE_KEY.with(|base| {
+                let base_ref = base.borrow().clone();
+                base_ref
+            });
+            task::spawn(async move {
+                let p = match attestation_execute_proof(HzysSlot::new(request_slot.value()),
+                 request_index,
+                 context_early_attester_cache,
+                 context_sepc_flag,
+                 context_attestation_base,
+                 context_beacon_state,
+                 context_attester_cache_key
+                ).await {
+                    Ok(proof) => {
+                        println!("Proof executed successfully");
+                        Ok(proof)
+                    }
+                    Err(e) => {
+                        eprintln!("Failed to execute proof: {}", e);
+                        Err(e)
+                    }
+                };
+                println!("Submitting transaction to proof");
+                let proof = p.unwrap();
+                let tx_hash = submit_verify_transaction(proof).await;
+                println!("published with hash {}", tx_hash);
+            })
+        };
 
 
-        // let _guard = OnDrop(Some(|| {
-        //     prooftask;
-        // }));
+        let _guard = OnDrop(Some(|| {
+             println!("hzysdebuginfo: myprooftask");
+            prooftask();
+        }));
 
         let _total_timer = metrics::start_timer(&metrics::ATTESTATION_PRODUCTION_SECONDS);
 

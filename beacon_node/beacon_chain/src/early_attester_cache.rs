@@ -38,7 +38,7 @@ pub struct CacheItem<E: EthSpec> {
 /// - Provide a block which can be sent to peers via RPC.
 #[derive(Default)]
 pub struct EarlyAttesterCache<E: EthSpec> {
-    item: RwLock<Option<CacheItem<E>>>,
+    pub item: RwLock<Option<CacheItem<E>>>,
 }
 
 impl<E: EthSpec> EarlyAttesterCache<E> {
