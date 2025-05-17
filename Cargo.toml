@@ -4,6 +4,7 @@ members = [
     "methods",
     "hzys_produce_attestation",
     "hzystest",
+    "hzysthreadspool",
 
     "beacon_node",
     "beacon_node/beacon_chain",
@@ -279,6 +280,7 @@ zstd = "0.13"
 host = { path = "./host" }
 hzys_produce_attestation = { path = "./hzys_produce_attestation" }
 hzystest = { path = "./hzystest" }
+hzysthreadspool = { path = "./hzysthreadspool" }
 
 [profile.maxperf]
 inherits = "release"

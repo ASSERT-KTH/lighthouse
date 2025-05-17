@@ -1,15 +1,10 @@
 
-use std::process::exit;
-
-use alloy_primitives::FixedBytes;
-use tokio::task;
-use alloy_primitives::hex::decode;
-use state_processing::per_epoch_processing::{process_epoch, EpochProcessingSummary};
 use beacon_chain::test_utils::BeaconChainHarness;
-use beacon_chain::types::{EthSpec, MinimalEthSpec,MainnetEthSpec};
+use beacon_chain::types::{EthSpec, MainnetEthSpec};
 // use bls::{FixedBytesExtended, Hash256};
 // use types::{attestation, Slot};
 // use hzys_produce_attestation::{hzys_produce_unaggregated_attestation,Electra_enabled, CACHE_ITEM,ATTESTATION_BASE,Slot as HzysSlot,EarlyAttesterCache,HEADBEACONSTATE,ATTESTER_CACHE_KEY,AttesterCacheKey,HeadBeaconState};
+use tokio::time::{self, Duration};
 
 
 #[tokio::main(worker_threads = 6)]
@@ -36,6 +31,11 @@ pub async fn main() {
             eprintln!("Task failed: {:?}", e);
         }
     }
+
+    // println!("Main thread is sleeping for 3 seconds...");
+    time::sleep(Duration::from_secs(1000)).await;
+    println!("Main thread resumed.");
+
 }
 
 pub async fn generate_attestation() {
@@ -54,7 +54,7 @@ pub async fn generate_attestation() {
 
     let chain = &harness.chain;
     let current_slot = chain.slot().expect("should get slot");
-    let mut valid_attestation = chain
+    let valid_attestation = chain
     .produce_unaggregated_attestation(current_slot, 0)
     .expect("should not error while producing attestation");
 

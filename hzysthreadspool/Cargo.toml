@@ -1,0 +1,9 @@
+[package]
+name = "hzysthreadspool"
+version = "0.1.0"
+edition = { workspace = true }
+
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+lazy_static = "1.4.0"

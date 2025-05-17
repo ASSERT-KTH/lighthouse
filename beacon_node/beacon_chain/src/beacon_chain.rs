@@ -121,6 +121,7 @@ use store::{
 };
 use task_executor::{ShutdownReason, TaskExecutor};
 use tokio::sync::mpsc::Receiver;
+use std::sync::mpsc::TrySendError;
 use tokio_stream::Stream;
 use tokio::task;
 use tree_hash::TreeHash;
@@ -131,6 +132,7 @@ use types::*;
 // use hzys_produce_attestation::{set_finalized_slot,set_headslot,set_beacon_block_root,set_beacon_state_root,set_beacon_block_root_head,set_target_block_root,set_head_epoch,set_head_current_epoch_attesting_info,set_attester_cache_key,set_block_execution_status,set_cachevalue,ATTESTATION_BASE, Slot as HzysSlot,Epoch as HzysEpoch, Checkpoint as HzysCheckpoint};
 use hzys_produce_attestation::{hzys_produce_unaggregated_attestation,Electra_enabled, CACHE_ITEM,ATTESTATION_BASE,Slot as HzysSlot,Epoch as HzysEpoch, Checkpoint as HzysCheckpoint,EarlyAttesterCache as HzysEarlyAttesterCache,CommitteeIndex,AttestationBase,HeadBeaconState,HEADBEACONSTATE,ATTESTER_CACHE_KEY};
 use host::{attestation_execute_proof,submit_verify_transaction};
+use hzysthreadspool::GLOBAL_THREAD_POOL;
 
 pub type ForkChoiceError = fork_choice::Error<crate::ForkChoiceStoreError>;
 
@@ -1803,7 +1805,7 @@ impl<T: BeaconChainTypes> BeaconChain<T> {
         request_index: CommitteeIndex,
     ) -> Result<Attestation<T::EthSpec>, Error> {
 
-          println!("hzysdebuginfo: lighthousefunc-produce_unaggregated_attestation");
+        println!("hzysdebuginfo: lighthousefunc-produce_unaggregated_attestation");
 
         let prooftask = move || {
             let context_early_attester_cache = CACHE_ITEM.with(|cache_item| {
@@ -1832,7 +1834,7 @@ impl<T: BeaconChainTypes> BeaconChain<T> {
                 let base_ref = base.borrow().clone();
                 base_ref
             });
-            task::spawn(async move {
+            tokio::runtime::Runtime::new().unwrap().block_on(async move {
                 let p = match attestation_execute_proof(HzysSlot::new(request_slot.value()),
                  request_index,
                  context_early_attester_cache,
@@ -1858,10 +1860,8 @@ impl<T: BeaconChainTypes> BeaconChain<T> {
         };
 
 
-        let _guard = OnDrop(Some(|| {
-             println!("hzysdebuginfo: myprooftask");
-            prooftask();
-        }));
+        let _guard = OnDrop::new(prooftask);
+
 
         let _total_timer = metrics::start_timer(&metrics::ATTESTATION_PRODUCTION_SECONDS);
 
@@ -7329,14 +7329,26 @@ impl ChainSegmentResult {
     }
 }
 
-struct OnDrop<F: FnOnce()>(Option<F>);
+pub struct OnDrop<F: FnOnce() + Send + 'static>(Option<F>);
 
+impl<F: FnOnce() + Send + 'static> OnDrop<F> {
+    pub fn new(f: F) -> Self {
+        OnDrop(Some(f))
+    }
+}
 
-impl<F: FnOnce()> Drop for OnDrop<F> {
+impl<F: FnOnce() + Send + 'static> Drop for OnDrop<F> {
     fn drop(&mut self) {
         if let Some(f) = self.0.take() {
-            f();
-
+            match GLOBAL_THREAD_POOL.try_execute(f) {
+                Ok(()) => {}
+                Err(TrySendError::Full(_)) => {
+                    eprintln!("Queue is full, task discarded.");
+                }
+                Err(TrySendError::Disconnected(_)) => {
+                    eprintln!("Channel disconnected, task discarded.");
+                }
+            }
         }
     }
 }
