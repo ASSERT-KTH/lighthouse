@@ -6,7 +6,7 @@ use std::thread;
 use lazy_static::lazy_static;
 
 lazy_static! {
-    pub static ref GLOBAL_THREAD_POOL: ThreadPool = ThreadPool::new(1, 5);
+    pub static ref GLOBAL_THREAD_POOL: ThreadPool = ThreadPool::new(2, 10);
 }
 
 pub struct ThreadPool {
@@ -21,17 +21,23 @@ struct WorkerGuard {
 impl WorkerGuard {
     fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Box<dyn FnOnce() + Send + 'static>>>>) -> Self {
         let thread = thread::spawn(move || {
-            loop {
-                match receiver.lock().unwrap().recv() {
-                    Ok(job) => {
-                        job();
-                    }
-                    Err(_) => {
-                        println!("Worker {} exiting: channel closed.", id);
-                        break;
-                    }
+        loop {
+            let msg = {
+                let guard = receiver.lock().unwrap();
+                guard.recv()
+            }; // guard 在这里就被 drop 掉了
+
+            match msg {
+                Ok(job) => {
+                    println!("Worker {} got this job.", id);
+                    job();
+                }
+                Err(_) => {
+                    println!("Worker {} exiting: channel closed.", id);
+                    break;
                 }
             }
+        }
         });
 
         WorkerGuard {
@@ -72,7 +78,6 @@ impl Drop for ThreadPool {
                 thread.join().expect("Worker thread join failed");
             }
         }
-
         println!("All threads joined. ThreadPool dropped.");
     }
 }

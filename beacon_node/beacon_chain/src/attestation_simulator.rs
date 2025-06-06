@@ -17,10 +17,11 @@ pub fn start_attestation_simulator_service<T: BeaconChainTypes>(
     executor: TaskExecutor,
     chain: Arc<BeaconChain<T>>,
 ) {
-    executor.clone().spawn(
-        async move { attestation_simulator_service(executor, chain).await },
-        "attestation_simulator_service",
-    );
+    //I killed this because it was causing the attestation simulator to run twice
+    // executor.clone().spawn(
+    //     async move { attestation_simulator_service(executor, chain).await },
+    //     "attestation_simulator_service",
+    // );
 }
 
 /// Loop indefinitely, calling `BeaconChain::produce_unaggregated_attestation` every 4s into each slot.

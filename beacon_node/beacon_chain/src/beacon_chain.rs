@@ -133,6 +133,7 @@ use types::*;
 use hzys_produce_attestation::{hzys_produce_unaggregated_attestation,Electra_enabled, CACHE_ITEM,ATTESTATION_BASE,Slot as HzysSlot,Epoch as HzysEpoch, Checkpoint as HzysCheckpoint,EarlyAttesterCache as HzysEarlyAttesterCache,CommitteeIndex,AttestationBase,HeadBeaconState,HEADBEACONSTATE,ATTESTER_CACHE_KEY};
 use host::{attestation_execute_proof,submit_verify_transaction};
 use hzysthreadspool::GLOBAL_THREAD_POOL;
+use hzyscache::{check_duplicate_call,clear_call_hash_cache};
 
 pub type ForkChoiceError = fork_choice::Error<crate::ForkChoiceStoreError>;
 
@@ -1806,6 +1807,7 @@ impl<T: BeaconChainTypes> BeaconChain<T> {
     ) -> Result<Attestation<T::EthSpec>, Error> {
 
         println!("hzysdebuginfo: lighthousefunc-produce_unaggregated_attestation");
+        println!("hzysdebuginfo: slot: {}, index: {}",request_slot,request_index);
 
         let prooftask = move || {
             let context_early_attester_cache = CACHE_ITEM.with(|cache_item| {
@@ -1834,8 +1836,12 @@ impl<T: BeaconChainTypes> BeaconChain<T> {
                 let base_ref = base.borrow().clone();
                 base_ref
             });
+            if check_duplicate_call(HzysSlot::new(request_slot.value()), request_index, context_early_attester_cache.clone(),  context_sepc_flag, context_attestation_base.clone(), context_beacon_state.clone(), context_attester_cache_key.clone()) {
+                    println!("hzysdebuginfo: Duplicate call detected, skipping attestation production.");
+                    return;// 显式返回 Ok(None)
+                }
             tokio::runtime::Runtime::new().unwrap().block_on(async move {
-                let p = match attestation_execute_proof(HzysSlot::new(request_slot.value()),
+                 let p = match attestation_execute_proof(HzysSlot::new(request_slot.value()),
                  request_index,
                  context_early_attester_cache,
                  context_sepc_flag,
@@ -1845,6 +1851,9 @@ impl<T: BeaconChainTypes> BeaconChain<T> {
                 ).await {
                     Ok(proof) => {
                         println!("Proof executed successfully");
+                        println!("Submitting transaction to proof");
+                        let tx_hash = submit_RISC0verify_transaction(request_slot.value().clone(),proof.clone()).await;
+                        println!("Published with hash {}", tx_hash);
                         Ok(proof)
                     }
                     Err(e) => {
@@ -1852,10 +1861,6 @@ impl<T: BeaconChainTypes> BeaconChain<T> {
                         Err(e)
                     }
                 };
-                println!("Submitting transaction to proof");
-                let proof = p.unwrap();
-                let tx_hash = submit_verify_transaction(proof).await;
-                println!("published with hash {}", tx_hash);
             })
         };
 

@@ -1826,6 +1826,7 @@ dependencies = [
  "hex",
  "host",
  "hzys_produce_attestation",
+ "hzyscache",
  "hzysthreadspool",
  "int_to_bytes",
  "itertools 0.10.5",
@@ -5445,6 +5446,17 @@ dependencies = [
  "safe_arith",
  "serde",
  "slog",
+]
+
+[[package]]
+name = "hzyscache"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "hzys_produce_attestation",
+ "lazy_static",
+ "serde",
+ "sha2 0.10.8",
 ]
 
 [[package]]

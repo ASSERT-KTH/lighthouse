@@ -79,6 +79,7 @@ types = { workspace = true }
 hzys_produce_attestation = {path ="../../hzys_produce_attestation"}
 host={workspace = true}
 hzysthreadspool={workspace = true}
+hzyscache={workspace = true}
 
 [[test]]
 name = "beacon_chain_tests"

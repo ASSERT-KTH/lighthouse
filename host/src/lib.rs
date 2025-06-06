@@ -12,10 +12,11 @@ use alloy::{
 };
 
 use alloy_primitives::Address;
+use alloy_primitives::U256;
 
 alloy::sol!(
     #[sol(rpc, all_derives)]
-    "./contracts/IRiscZeroVerifier.sol"
+    "./contracts/VerifiableClientDiversity.sol"
 );
 
 #[derive( Clone)]
@@ -25,7 +26,7 @@ pub struct ProofData {
     pub elf_id: String,
 }
 
-pub async fn submit_verify_transaction(proof_data: ProofData) -> String {
+pub async fn submit_RISC0verify_transaction(slot:u64,proof_data: ProofData) -> String {
     //this is a test private key, never commit a real key to vcs
     let wallet_private_key = PrivateKeySigner::from_str("a291e47eca2999e09be704728c686c854bdc69e972b1f229d2bfb532ec23f3e2").unwrap();
     //using docker interface
@@ -36,18 +37,48 @@ pub async fn submit_verify_transaction(proof_data: ProofData) -> String {
         .wallet(EthereumWallet::from(wallet_private_key))
         .on_http(rpc_url);
 
-    let contract_addr = Address::parse_checksummed("0x123463a4B065722E99115D6c222f267d9cABb524", None).unwrap();
+    let contract_addr = Address::parse_checksummed("0x777777A4B065722E99115D6c222f267d9CaBB524", None).unwrap();
 
-    let contract = IRiscZeroVerifier::new(contract_addr, provider);
+    let contract = VerifiableClientDiversity::new(contract_addr, provider);
     let image_id_bytes = alloy_primitives::FixedBytes::from_str(proof_data.elf_id.as_str()).unwrap();
     let journal_digest_bytes = alloy_primitives::FixedBytes::from_str(proof_data.journal_digest.as_str()).unwrap();
     let seal_bytes = alloy_primitives::Bytes::from_str(proof_data.seal.as_str()).unwrap();
-    let call_builder = contract.verify(seal_bytes, image_id_bytes, journal_digest_bytes);
+    let slot_u256 = U256::from(slot);
+    let call_builder = contract.submitProof(slot_u256, seal_bytes, image_id_bytes, journal_digest_bytes);
 
     //let handle = tokio::runtime::Handle::current();
 
     // let pending_tx = handle.block_on(call_builder.send()).unwrap();
-    let pending_tx = call_builder.send().await.unwrap();
+    let pending_tx: alloy::providers::PendingTransactionBuilder<alloy::transports::http::Http<alloy::transports::http::Client>, alloy::network::Ethereum> = call_builder.send().await.unwrap();
+    pending_tx.tx_hash().encode_hex()
+    //let _ = pending_tx.expect("error").get_receipt().await;
+}
+
+
+pub async fn submit_TEEverify_transaction(slot:u64,proof_data: ProofData) -> String {
+    //this is a test private key, never commit a real key to vcs
+    let wallet_private_key = PrivateKeySigner::from_str("a291e47eca2999e09be704728c686c854bdc69e972b1f229d2bfb532ec23f3e2").unwrap();
+    //using docker interface
+    let rpc_url = Url::from_str("http://172.17.0.1:32002").unwrap();
+
+    let provider = ProviderBuilder::new()
+        .with_recommended_fillers()
+        .wallet(EthereumWallet::from(wallet_private_key))
+        .on_http(rpc_url);
+
+    let contract_addr = Address::parse_checksummed("0x777777A4B065722E99115D6c222f267d9CaBB524", None).unwrap();
+
+    let contract = VerifiableClientDiversity::new(contract_addr, provider);
+    let image_id_bytes = alloy_primitives::FixedBytes::from_str(proof_data.elf_id.as_str()).unwrap();
+    let journal_digest_bytes = alloy_primitives::FixedBytes::from_str(proof_data.journal_digest.as_str()).unwrap();
+    let seal_bytes = alloy_primitives::Bytes::from_str(proof_data.seal.as_str()).unwrap();
+    let slot_u256 = U256::from(slot);
+    let call_builder = contract.submitProof(slot_u256, seal_bytes, image_id_bytes, journal_digest_bytes);
+
+    //let handle = tokio::runtime::Handle::current();
+
+    // let pending_tx = handle.block_on(call_builder.send()).unwrap();
+    let pending_tx: alloy::providers::PendingTransactionBuilder<alloy::transports::http::Http<alloy::transports::http::Client>, alloy::network::Ethereum> = call_builder.send().await.unwrap();
     pending_tx.tx_hash().encode_hex()
     //let _ = pending_tx.expect("error").get_receipt().await;
 }

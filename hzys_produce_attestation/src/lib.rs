@@ -2,6 +2,11 @@ use fixed_bytes;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::collections::HashMap;
+// use lazy_static::lazy_static;
+// use std::collections::HashSet;
+// use std::sync::{Arc, Mutex};
+// use bincode::{serialize, Options};
+// use sha2::{Digest, Sha256};
 
 
 
@@ -715,3 +720,84 @@ pub fn try_attest(
 //         }
 //     });
 // }
+
+
+
+
+// lazy_static! {
+//     static ref CALL_HASH_CACHE: Arc<Mutex<HashSet<[u8; 32]>>> = Arc::new(Mutex::new(HashSet::new()));
+// }
+
+// struct FunctionCallParams<'a> {
+//     request_slot: u64,
+//     request_index: u64,
+//     context_early_attester_cache_item: Option<String>,
+//     context_sepc: bool,
+//     context_attestation_base: &'a str,
+//     context_beacon_state: &'a str,
+//     context_attester_cache_key: &'a str,
+// }
+
+// pub fn generate_call_hash(
+//     request_slot: u64,
+//     request_index: u64,
+//     context_early_attester_cache_item: Option<String>,
+//     context_sepc: bool,
+//     context_attestation_base: &str,
+//     context_beacon_state: &str,
+//     context_attester_cache_key: &str,
+// ) -> [u8; 32] {
+//     let params = FunctionCallParams {
+//         request_slot,
+//         request_index,
+//         context_early_attester_cache_item,
+//         context_sepc,
+//         context_attestation_base,
+//         context_beacon_state,
+//         context_attester_cache_key,
+//     };
+
+//     let serialized = serialize(&params).expect("Serialization failed");
+//     let mut hasher = Sha256::new();
+//     hasher.update(serialized);
+//     let result = hasher.finalize();
+//     result.into()
+// }
+
+// pub fn check_duplicate_call(
+//     request_slot: u64,
+//     request_index: u64,
+//     context_early_attester_cache_item: Option<String>,
+//     context_sepc: bool,
+//     context_attestation_base: &str,
+//     context_beacon_state: &str,
+//     context_attester_cache_key: &str,
+// ) -> bool {
+//     let hash = generate_call_hash(
+//         request_slot,
+//         request_index,
+//         context_early_attester_cache_item,
+//         context_sepc,
+//         context_attestation_base,
+//         context_beacon_state,
+//         context_attester_cache_key,
+//     );
+
+//     let cache = CALL_HASH_CACHE.clone();
+//     let mut guard = cache.lock().expect("Failed to acquire mutex lock");
+
+//     if guard.contains(&hash) {
+//         true // 已存在，表示重复调用
+//     } else {
+//         guard.insert(hash);
+//         false // 未重复
+//     }
+// }
+
+// /// 清空哈希缓存
+// pub fn clear_call_hash_cache() {
+//     let cache = CALL_HASH_CACHE.clone(); // 克隆 Arc 以访问共享数据
+//     let mut guard = cache.lock().expect("Failed to acquire mutex lock");
+//     guard.clear(); // 清空缓存
+// }
+

@@ -3313,6 +3313,7 @@ pub fn serve<T: BeaconChainTypes>(
                             query.slot, current_slot
                         )));
                     }
+                    println!("\n\n===============\n\nquery.slot: {:?}, query.committee_index: {:?}\n\n===============\n\n", query.slot,query.committee_index);
 
                     chain
                         .produce_unaggregated_attestation(query.slot, query.committee_index)
