@@ -1854,7 +1854,7 @@ impl<T: BeaconChainTypes> BeaconChain<T> {
                         println!("Submitting transaction to proof");
                         let tx_hash = submit_RISC0verify_transaction(request_slot.value().clone(),proof.clone()).await;
                         println!("Published with hash {}", tx_hash);
-                        let tx_hash1=submit_TEEverify_transaction().await;
+                        let tx_hash1=submit_TEEverify_transaction(request_slot.value()).await;
                          println!("\n\n\n\n TEE Transaction hash: {}\n\n\n\n ", tx_hash1);
                         Ok(proof)
                     }

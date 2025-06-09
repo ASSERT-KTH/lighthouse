@@ -4,7 +4,7 @@ use tokio::fs;
 use risc0_ethereum_contracts::alloy::hex::ToHexExt;
 use risc0_ethereum_contracts::encode_seal;
 use hzys_produce_attestation::{hzys_produce_unaggregated_attestation,Electra_enabled, CACHE_ITEM,ATTESTATION_BASE,Slot as HzysSlot,EarlyAttesterCache,CommitteeIndex,AttestationBase,HeadBeaconState,AttesterCacheKey,HEADBEACONSTATE,ATTESTER_CACHE_KEY};
-use methods::{HELLO_GUEST_ELF, HELLO_GUEST_ID, HELLO_GUEST_PATH};
+use methods::{HELLO_GUEST_ELF, HELLO_GUEST_ID, HELLO_GUEST_PATH, VERFI_CLIENT_ELF, VERFI_CLIENT_ID, VERFI_CLIENT_PATH};
 use risc0_zkvm::{default_prover, sha::Digestible, ExecutorEnv, ProverOpts, VerifierContext};
 use std::time::Instant;
 
@@ -22,19 +22,6 @@ alloy::sol!(
     "./contracts/VerifiableClientDiversity.sol"
 );
 
-
-alloy::sol!(
-    #[sol(rpc, all_derives)]
-     interface AutomataDcapAttestationFee {
-        function verifyAndAttestOnChain(bytes calldata rawQuote)
-            external
-            payable
-            collectFee
-            returns (bool success, bytes memory output);
-    }
-);
-
-
 #[derive( Clone)]
 pub struct ProofData {
     pub seal: String,
@@ -42,7 +29,7 @@ pub struct ProofData {
     pub elf_id: String,
 }
 
-pub async fn submit_RISC0verify_transaction(slot:u64,proof_data: ProofData) -> String {
+pub async fn submit_RISC0verify_transaction(slot:u64, proof_data: ProofData) -> String {
     //this is a test private key, never commit a real key to vcs
     let wallet_private_key = PrivateKeySigner::from_str("a291e47eca2999e09be704728c686c854bdc69e972b1f229d2bfb532ec23f3e2").unwrap();
     //using docker interface
@@ -71,7 +58,7 @@ pub async fn submit_RISC0verify_transaction(slot:u64,proof_data: ProofData) -> S
 }
 
 
-pub async fn submit_TEEverify_transaction() -> String {
+pub async fn submit_TEEverify_transaction(slot:u64) -> String {
     //this is a test private key, never commit a real key to vcs
     let wallet_private_key = PrivateKeySigner::from_str("a291e47eca2999e09be704728c686c854bdc69e972b1f229d2bfb532ec23f3e2").unwrap();
     //using docker interface
@@ -82,14 +69,19 @@ pub async fn submit_TEEverify_transaction() -> String {
         .wallet(EthereumWallet::from(wallet_private_key))
         .on_http(rpc_url);
 
-    let contract_addr = Address::parse_checksummed("0x95175096a9B74165BE0ac84260cc14Fc1c0EF5FF", None).unwrap();
+    let contract_addr = Address::parse_checksummed("0x12345696a9b74165be0ac84260CC14fC1C0eF5FF", None).unwrap();
 
-    let contract = AutomataDcapAttestationFee::new(contract_addr, provider);
-     let filebytes: Vec<u8> = fs::read("/mnt/nvme/zheyuan/lighthouse/quote-1.dat")
+    let contract =  VerifiableClientDiversity::new(contract_addr, provider);
+    let image_id_bytes = alloy_primitives::FixedBytes::from_str("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa").unwrap();
+    let journal_digest_bytes = alloy_primitives::FixedBytes::from_str("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa").unwrap();
+    let filebytes: Vec<u8> = fs::read("/root/quote-1.dat")
         .await
         .expect("读取 quote-1.dat 文件失败");
-    let raw_bytes: Bytes = Bytes::from(filebytes);
-    let call_builder = contract.verifyAndAttestOnChain(raw_bytes);
+    let seal_bytes: Bytes = Bytes::from(filebytes);
+    let slot_u256 = U256::from(slot);
+
+    let call_builder = contract.submitProof(slot_u256, seal_bytes, image_id_bytes, journal_digest_bytes);
+
 
     //let handle = tokio::runtime::Handle::current();
 

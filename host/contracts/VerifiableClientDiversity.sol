@@ -32,11 +32,12 @@ contract VerifiableClientDiversity is Ownable, ReentrancyGuard {
     event ProofSubmitted(address indexed submitter, bytes32 versionHash, uint256 reward);
 
     constructor(
+        ProofType _proofType,
         uint8 _allowedBlockDelay
     ) Ownable(msg.sender) {
-        proofType = ProofType.RISC0;
+        proofType =  _proofType;
         allowedBlockDelay = _allowedBlockDelay;
-        sgxVerificationContract = address(0x1234567890123456789012345678901234567890); // Placeholder
+        sgxVerificationContract = address(0x95175096a9B74165BE0ac84260cc14Fc1c0EF5FF); // Placeholder
         risc0VerificationContract = address(0x123463a4B065722E99115D6c222f267d9cABb524); // Placeholder
     }
 
@@ -134,10 +135,27 @@ contract VerifiableClientDiversity is Ownable, ReentrancyGuard {
         return versionIndex[versionHash];
     }
 
-    function verifySGXAttestation(bytes calldata proofData) internal view returns (bool) {
-        (bool success, bytes memory result) = sgxVerificationContract.staticcall(proofData);
-        return success && abi.decode(result, (bool));
+ function verifySGXAttestation(bytes calldata proofData) internal returns (bool) {
+    // Construct the ABI encoding of the function signature
+    bytes4 functionSelector = bytes4(keccak256("verifyAndAttestOnChain(bytes)"));
+
+    // Build the complete call data
+    bytes memory encodedCallData = abi.encodeWithSelector(functionSelector, proofData);
+
+    // Use call to invoke the function
+    (bool successCall, bytes memory result) = sgxVerificationContract.call{value: 0}(encodedCallData);
+
+    // If the call fails, return false directly
+    if (!successCall) {
+        return false;
     }
+
+    // Decode the return value (bool success, bytes memory output)
+    (bool internalSuccess, ) = abi.decode(result, (bool, bytes));
+
+    // Return the internal verification result
+    return internalSuccess;
+}
 
     function verifyRISC0(
         bytes calldata seal,
