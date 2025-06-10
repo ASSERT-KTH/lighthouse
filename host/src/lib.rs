@@ -4,7 +4,7 @@ use tokio::fs;
 use risc0_ethereum_contracts::alloy::hex::ToHexExt;
 use risc0_ethereum_contracts::encode_seal;
 use hzys_produce_attestation::{hzys_produce_unaggregated_attestation,Electra_enabled, CACHE_ITEM,ATTESTATION_BASE,Slot as HzysSlot,EarlyAttesterCache,CommitteeIndex,AttestationBase,HeadBeaconState,AttesterCacheKey,HEADBEACONSTATE,ATTESTER_CACHE_KEY};
-use methods::{HELLO_GUEST_ELF, HELLO_GUEST_ID, HELLO_GUEST_PATH, VERFI_CLIENT_ELF, VERFI_CLIENT_ID, VERFI_CLIENT_PATH};
+use methods::{VERCLIENT1_ELF, VERCLIENT1_ID, VERCLIENT1_PATH, VERCLIENT2_ELF, VERCLIENT2_ID, VERCLIENT2_PATH, VERCLIENT3_ELF, VERCLIENT3_ID, VERCLIENT3_PATH};
 use risc0_zkvm::{default_prover, sha::Digestible, ExecutorEnv, ProverOpts, VerifierContext};
 use std::time::Instant;
 
@@ -76,7 +76,7 @@ pub async fn submit_TEEverify_transaction(slot:u64) -> String {
     let journal_digest_bytes = alloy_primitives::FixedBytes::from_str("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa").unwrap();
     let filebytes: Vec<u8> = fs::read("/root/quote-1.dat")
         .await
-        .expect("读取 quote-1.dat 文件失败");
+        .expect("read quote-1.dat failed");
     let seal_bytes: Bytes = Bytes::from(filebytes);
     let slot_u256 = U256::from(slot);
 
@@ -98,8 +98,6 @@ pub fn u32_array_to_hex_string(arr: &[u32]) -> String {
         .join("")
 }
 
-
-
 pub async fn attestation_execute_proof(
     request_slot: HzysSlot,
     request_index: CommitteeIndex,
@@ -110,8 +108,6 @@ pub async fn attestation_execute_proof(
     context_attester_cache_key: AttesterCacheKey,
    ) -> Result<ProofData, Box<dyn std::error::Error>>
 {
-
-
     let Parm_slot = request_slot.clone();
 
     let exec_env = ExecutorEnv::builder()
@@ -140,17 +136,16 @@ pub async fn attestation_execute_proof(
     // Proof information by proving the specified ELF binary.
     // This struct contains the receipt along with statistics about execution of the guest
 
-
     //println!("workspace: {:?}", std::env::current_dir().unwrap());
-    println!("GUEST_ADDR: {}", HELLO_GUEST_PATH);
-    println!("GUEST_ELF length: {}", HELLO_GUEST_ELF.len());
-    println!("GUEST_ELF_ID length: {}", HELLO_GUEST_ID.len());
+    println!("GUEST_ADDR: {}", VERCLIENT1_PATH);
+    println!("GUEST_ELF length: {}", VERCLIENT1_ELF.len());
+    println!("GUEST_ELF_ID length: {}", VERCLIENT1_ID.len());
     let start_time = Instant::now();
     let prove_info = prover
         .prove_with_ctx(
             exec_env,
             &VerifierContext::default(),
-            HELLO_GUEST_ELF,
+            VERCLIENT1_ELF,
             &ProverOpts::groth16()
         )
         .unwrap();
@@ -174,7 +169,7 @@ pub async fn attestation_execute_proof(
     println!("I generated a proof of execution! {} is a public output from journal ", encoded);
     let p = ProofData {
         seal: encoded,
-        elf_id: u32_array_to_hex_string(&HELLO_GUEST_ID),
+        elf_id: u32_array_to_hex_string(&VERCLIENT1_ID),
         journal_digest
     };
 

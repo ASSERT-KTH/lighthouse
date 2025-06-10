@@ -13,6 +13,12 @@ fn main() {
     let mut Hys_beaconstate:HeadBeaconState=env::read();
     let mut Hys_attester_cache_key:AttesterCacheKey=env::read();
 
+    let v1: u64 = 3;
+    let mut tmp: u64 = 0;
+    if v1== 1 {
+        tmp=v1;
+    }
+
     hzys_produce_unaggregated_attestation(Hzys_slot,
     Hzys_requestindex,
     &Hzys_early_attester_cache,
