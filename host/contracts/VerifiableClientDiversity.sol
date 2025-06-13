@@ -1,8 +1,3 @@
-
-//1.how to set prooftype and if we have a parameter in sumbit?
-//2.how to get version hash?
-//3.how to set allowedBlockDelay at first?  20
-
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
@@ -16,14 +11,13 @@ contract VerifiableClientDiversity is Ownable, ReentrancyGuard {
     }
 
     ProofType public proofType;
-
     uint8 public allowedBlockDelay;
+    address public sgxVerificationContract;
+    address public risc0VerificationContract;
+
     bytes32[] public allowedVersions;
     mapping(bytes32 => uint256) public versionIndex;
     uint256 public reward;
-
-    address public immutable sgxVerificationContract;
-    address public immutable risc0VerificationContract;
 
     event RewardUpdated(uint256 oldReward, uint256 newReward);
     event AllowedDelayUpdated(uint8 oldDelay, uint8 newDelay);
@@ -81,7 +75,7 @@ contract VerifiableClientDiversity is Ownable, ReentrancyGuard {
         bytes32 imageId,
         bytes32 journalDigest
     ) external nonReentrant {
-        // require(isVersionAllowed(imageId), "Version not allowed");
+        require(isVersionAllowed(imageId), "Version not allowed");
         require(
             proofForBlock >= block.number && proofForBlock <= block.number + allowedBlockDelay,
             "Invalid block range"

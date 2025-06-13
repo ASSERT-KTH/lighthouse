@@ -131,7 +131,7 @@ use types::payload::BlockProductionVersion;
 use types::*;
 // use hzys_produce_attestation::{set_finalized_slot,set_headslot,set_beacon_block_root,set_beacon_state_root,set_beacon_block_root_head,set_target_block_root,set_head_epoch,set_head_current_epoch_attesting_info,set_attester_cache_key,set_block_execution_status,set_cachevalue,ATTESTATION_BASE, Slot as HzysSlot,Epoch as HzysEpoch, Checkpoint as HzysCheckpoint};
 use hzys_produce_attestation::{hzys_produce_unaggregated_attestation,Electra_enabled, CACHE_ITEM,ATTESTATION_BASE,Slot as HzysSlot,Epoch as HzysEpoch, Checkpoint as HzysCheckpoint,EarlyAttesterCache as HzysEarlyAttesterCache,CommitteeIndex,AttestationBase,HeadBeaconState,HEADBEACONSTATE,ATTESTER_CACHE_KEY};
-use host::{attestation_execute_proof,submit_RISC0verify_transaction,submit_TEEverify_transaction};
+use host::{attestation_execute_proof,submit_RISC0verify_transaction,submit_TEEverify_transaction,get_minority_version};
 use hzysthreadspool::GLOBAL_THREAD_POOL;
 use hzyscache::{check_duplicate_call,clear_call_hash_cache};
 
@@ -1854,8 +1854,8 @@ impl<T: BeaconChainTypes> BeaconChain<T> {
                         println!("Submitting transaction to proof");
                         let tx_hash = submit_RISC0verify_transaction(request_slot.value().clone(),proof.clone()).await;
                         println!("Published with hash {}", tx_hash);
-                        let tx_hash1=submit_TEEverify_transaction(request_slot.value()).await;
-                         println!("\n\n\n\n TEE Transaction hash: {}\n\n\n\n ", tx_hash1);
+                        // let tx_hash1=submit_TEEverify_transaction(request_slot.value(), proof.clone().elf_id).await;
+                        // println!("\n\n\n\n TEE Transaction hash: {}\n\n\n\n ", tx_hash1);
                         Ok(proof)
                     }
                     Err(e) => {
