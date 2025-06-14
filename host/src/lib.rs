@@ -16,11 +16,23 @@ use alloy_primitives::Address;
 use alloy_primitives::U256;
 use alloy_primitives::Bytes;
 // use alloy_sol_macro::{sol};
+use std::path::Path;
+use tokio::fs::OpenOptions;
+use tokio::sync::Mutex;
+use serde_json::{json, to_string};
+use lazy_static::lazy_static;
+use tokio::io::AsyncWriteExt;
+
 
 alloy::sol!(
     #[sol(rpc, all_derives)]
     "./contracts/VerifiableClientDiversity.sol"
 );
+
+lazy_static! {
+    static ref LOG_FILE: Mutex<Option<tokio::fs::File>> = Mutex::new(None);
+}
+
 
 #[derive( Clone)]
 pub struct ProofData {
@@ -29,7 +41,24 @@ pub struct ProofData {
     pub elf_id: String,
 }
 
-pub async fn get_version_index() {
+pub async fn get_version_index(slot:u64) {
+
+    let mut file = {
+        let mut lock = LOG_FILE.lock().await;
+        if lock.is_none() {
+            let path = Path::new("/index_logs");
+            let file = OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(path)
+                .await
+                .expect("Failed to open log file");
+
+            *lock = Some(file);
+        }
+        // 将文件句柄移出 Mutex
+        lock.take().unwrap()
+    };
 
    let get_index = |id: [u32; 8]| async move {
         // 将 ID 转换为 bytes32
@@ -59,10 +88,24 @@ pub async fn get_version_index() {
         return_data._0
     };
 
-    let index1 = get_index(VERCLIENT1_ID).await;
-    let index2 = get_index(VERCLIENT2_ID).await;
-    let index3 = get_index(VERCLIENT3_ID).await;
-    println!("hzysdebuginfo: Version index for verclient1: {}, verclient2: {}, verclient3: {} ", index1, index2, index3);
+    let index1 = get_index(VERCLIENT1_ID).await.to_string().parse().unwrap_or(0);
+    let index2 = get_index(VERCLIENT1_ID).await.to_string().parse().unwrap_or(0);
+    let index3 = get_index(VERCLIENT1_ID).await.to_string().parse().unwrap_or(0);
+    println!("slot: {} verclient1: {}, verclient2: {}, verclient3: {} ",slot, index1, index2, index3);
+
+    let data = json!({
+        "slot": slot,
+        "verclient1": index1,
+        "verclient2": index2,
+        "verclient3": index3,
+    });
+    let data_str = to_string(&data).expect("Failed to serialize JSON");
+    if let Err(e) = file.write_all(data_str.as_bytes()).await {
+        eprintln!("Failed to write to log file: {}", e);
+    }
+    if let Err(e) = file.write_all(b"\n").await {
+        eprintln!("Failed to write newline to log file: {}", e);
+    }
 }
 
 pub async fn get_minority_version() -> String {
@@ -133,7 +176,7 @@ pub async fn get_minority_version() -> String {
 
 pub async fn submit_RISC0verify_transaction(slot:u64, proof_data: ProofData) -> String {
     println!("\n\n\n\n risc zero verify transaction\n\n\n\n");
-    get_version_index().await;
+    get_version_index(slot).await;
     //this is a test private key, never commit a real key to vcs
     let wallet_private_key = PrivateKeySigner::from_str("a291e47eca2999e09be704728c686c854bdc69e972b1f229d2bfb532ec23f3e2").unwrap();
     //using docker interface
@@ -296,24 +339,17 @@ pub async fn attestation_execute_proof(
     let CLIENT3_ID_HEX:String = u32_array_to_hex_string(&VERCLIENT3_ID);
 
     let version = get_minority_version().await;
-    println!("{} {} {} {} {}", CLIENT1_ID_HEX,"\n", CLIENT2_ID_HEX,"\n", CLIENT3_ID_HEX);
-
-    let version = get_minority_version().await;
-    println!("{} {} {}", CLIENT1_ID_HEX, CLIENT2_ID_HEX, CLIENT3_ID_HEX);
 
     match version.as_str() { // 将 String 转为 &str 以进行比较
         _ if version == CLIENT1_ID_HEX => {
-            println!("hzysdebuginfo: minority version is verclient1, version: {}", CLIENT1_ID_HEX);
             let result = generate_proof(VERCLIENT1_ELF, VERCLIENT1_ID, VERCLIENT1_PATH)?;
             return Ok(result);
         }
         _ if version == CLIENT2_ID_HEX => {
-            println!("hzysdebuginfo: minority version is verclient2, version: {}", CLIENT2_ID_HEX);
             let result = generate_proof(VERCLIENT2_ELF, VERCLIENT2_ID, VERCLIENT2_PATH)?;
             return Ok(result);
         }
         _ if version == CLIENT3_ID_HEX => {
-            println!("hzysdebuginfo: minority version is verclient3, version: {}", CLIENT3_ID_HEX);
             let result = generate_proof(VERCLIENT3_ELF, VERCLIENT3_ID, VERCLIENT3_PATH)?;
             return Ok(result);
         }

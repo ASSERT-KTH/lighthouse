@@ -27,3 +27,4 @@ state_processing = { workspace = true }
 bls = { workspace = true }
 types = { workspace = true }
 hzys_produce_attestation = {path ="../hzys_produce_attestation"}
+lazy_static = "1.4"

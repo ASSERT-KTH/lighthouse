@@ -5149,6 +5149,7 @@ dependencies = [
  "bls",
  "borsh",
  "hzys_produce_attestation",
+ "lazy_static",
  "methods",
  "risc0-build",
  "risc0-ethereum-contracts",

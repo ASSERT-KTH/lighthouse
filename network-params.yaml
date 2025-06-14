@@ -12,13 +12,15 @@ network_params:
     # network: "vdc-testnet"
     network_id: "455327"
     num_validator_keys_per_node: 5
-    seconds_per_slot: 12
+
+
 
 #0x123463a4B065722E99115D6c222f267d9cABb524 risc0 addr
 #0x777777A4B065722E99115D6c222f267d9CaBB524 our risc0 agent
 #0x95175096a9B74165BE0ac84260cc14Fc1c0EF5FF sgx addr
 
 network_params:
+    seconds_per_slot: 128
     additional_preloaded_contracts: '
     {
         "0x123463a4B065722E99115D6c222f267d9cABb524":
