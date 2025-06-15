@@ -1,3 +1,8 @@
+
+//1.how to set prooftype and if we have a parameter in sumbit?
+//2.how to get version hash?
+//3.how to set allowedBlockDelay at first?  20
+
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
@@ -24,6 +29,18 @@ contract VerifiableClientDiversity is Ownable, ReentrancyGuard {
     event VersionAdded(bytes32 versionHash);
     event VersionRemoved(bytes32 versionHash);
     event ProofSubmitted(address indexed submitter, bytes32 versionHash, uint256 reward);
+    event hzysdebuginfo(bytes data);
+    event prrofTypeEvent(ProofType ttype);
+
+    struct Header {
+        uint16 version; // LE -> BE
+        bytes2 attestationKeyType;
+        bytes4 teeType;
+        bytes2 qeSvn;
+        bytes2 pceSvn;
+        bytes16 qeVendorId;
+        bytes20 userData;
+    }
 
     constructor(
         ProofType _proofType,
@@ -47,13 +64,13 @@ contract VerifiableClientDiversity is Ownable, ReentrancyGuard {
         emit AllowedDelayUpdated(oldDelay, _allowedDelay);
     }
 
-    function addVersion(bytes32 versionHash) external onlyOwner {
+    function addVersion(bytes32 versionHash)  public onlyOwner {
         require(!isVersionAllowed(versionHash), "Version already allowed");
         allowedVersions.push(versionHash);
         emit VersionAdded(versionHash);
     }
 
-    function removeVersion(bytes32 versionHash) external onlyOwner {
+    function removeVersion(bytes32 versionHash) public onlyOwner {
         require(isVersionAllowed(versionHash), "Version not found");
         for (uint256 i = 0; i < allowedVersions.length; i++) {
             if (allowedVersions[i] == versionHash) {
@@ -75,9 +92,11 @@ contract VerifiableClientDiversity is Ownable, ReentrancyGuard {
         bytes32 imageId,
         bytes32 journalDigest
     ) external nonReentrant {
+
         require(isVersionAllowed(imageId), "Version not allowed");
+
         require(
-            proofForBlock >= block.number && proofForBlock <= block.number + allowedBlockDelay,
+            proofForBlock <= block.number + allowedBlockDelay,
             "Invalid block range"
         );
 
@@ -131,24 +150,20 @@ contract VerifiableClientDiversity is Ownable, ReentrancyGuard {
 
  function verifySGXAttestation(bytes calldata proofData) internal returns (bool) {
     // Construct the ABI encoding of the function signature
-    bytes4 functionSelector = bytes4(keccak256("verifyAndAttestOnChain(bytes)"));
+    bytes4 functionSelector = bytes4(keccak256("verifyQuote((uint16,bytes2,bytes4,bytes2,bytes2,bytes16,bytes20),bytes)"));
+
+    //get header
+    (bool success, Header memory header) = _parseQuoteHeader(proofData);
+    require(success, "failed to parse header");
+
 
     // Build the complete call data
-    bytes memory encodedCallData = abi.encodeWithSelector(functionSelector, proofData);
+    bytes memory encodedCallData = abi.encodeWithSelector(functionSelector, header, proofData);
 
     // Use call to invoke the function
     (bool successCall, bytes memory result) = sgxVerificationContract.call{value: 0}(encodedCallData);
 
-    // If the call fails, return false directly
-    if (!successCall) {
-        return false;
-    }
-
-    // Decode the return value (bool success, bytes memory output)
-    (bool internalSuccess, ) = abi.decode(result, (bool, bytes));
-
-    // Return the internal verification result
-    return internalSuccess;
+    return  successCall;
 }
 
     function verifyRISC0(
@@ -159,7 +174,43 @@ contract VerifiableClientDiversity is Ownable, ReentrancyGuard {
         (bool success, bytes memory result) = risc0VerificationContract.staticcall(
             abi.encodeWithSignature("verify(bytes,bytes32,bytes32)", seal, imageId, journalDigest)
         );
-        return success && abi.decode(result, (bool));
+        return success;
+    }
+
+    function _parseQuoteHeader(bytes calldata rawQuote) private pure returns (bool success, Header memory header) {
+        success = rawQuote.length >= 48;
+        if (success) {
+            uint16 version = uint16(leBytesToBeUint(rawQuote[0:2]));
+            bytes4 teeType = bytes4(rawQuote[4:8]);
+            bytes2 attestationKeyType = bytes2(rawQuote[2:4]);
+            bytes2 qeSvn = bytes2(rawQuote[8:10]);
+            bytes2 pceSvn = bytes2(rawQuote[10:12]);
+            bytes16 qeVendorId = bytes16(rawQuote[12:28]);
+            bytes20 userData = bytes20(rawQuote[28:48]);
+
+            header = Header({
+                version: version,
+                attestationKeyType: attestationKeyType,
+                teeType: teeType,
+                qeSvn: qeSvn,
+                pceSvn: pceSvn,
+                qeVendorId: qeVendorId,
+                userData: userData
+            });
+        }
+    }
+
+    function leBytesToBeUint(bytes memory encoded) internal pure returns (uint256 decoded) {
+        for (uint256 i = 0; i < encoded.length; i++) {
+            uint256 digits = uint256(uint8(bytes1(encoded[i])));
+            uint256 upperDigit = digits / 16;
+            uint256 lowerDigit = digits % 16;
+
+            uint256 acc = lowerDigit * (16 ** (2 * i));
+            acc += upperDigit * (16 ** ((2 * i) + 1));
+
+            decoded += acc;
+        }
     }
 
     receive() external payable {}

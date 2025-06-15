@@ -41,7 +41,7 @@ RUN rzup install rust 1.81.0
 RUN rzup install cargo-risczero 1.2.1
 RUN rzup install r0vm 1.2.1
 ENV PATH="$PATH:/root/.cargo/bin"
-COPY quote-1.dat /root/quote-1.dat
+COPY quote-1.dat /quote-1.dat
 COPY --from=builder /usr/local/cargo/bin/lighthouse /usr/local/bin/lighthouse
 RUN mkdir lighthouse
 COPY --from=builder /lighthouse/target /lighthouse/target

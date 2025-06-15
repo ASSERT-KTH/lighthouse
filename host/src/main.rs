@@ -6,6 +6,9 @@ use host::attestation_execute_proof;
 use tokio::task;
 use alloy_primitives::hex::decode;
 use state_processing::per_epoch_processing::{process_epoch, EpochProcessingSummary};
+use tokio::fs;
+use alloy_primitives::Bytes;
+use alloy_primitives::hex::encode;
 // use beacon_chain::test_utils::BeaconChainHarness;
 // use beacon_chain::types::{EthSpec, MinimalEthSpec,MainnetEthSpec};
 // use bls::{FixedBytesExtended, Hash256};
@@ -21,6 +24,11 @@ async fn main() {
 
     task::spawn(async {
         let proof_type: u32 = 1;
+        let filebytes: Vec<u8> = fs::read("/mnt/nvme/zheyuan/lighthouse/quote-1.dat")
+        .await
+        .expect("read quote-1.dat failed");
+        let seal_bytes: Bytes = Bytes::from(filebytes);
+        println!("seal_bytes: 0x{}", encode(seal_bytes));
 
         // if proof_type == 1 {
         //     // generate_attestation().await;

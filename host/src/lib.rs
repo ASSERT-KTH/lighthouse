@@ -22,6 +22,7 @@ use tokio::sync::Mutex;
 use serde_json::{json, to_string};
 use lazy_static::lazy_static;
 use tokio::io::AsyncWriteExt;
+use alloy_primitives::hex::encode;
 
 
 alloy::sol!(
@@ -89,8 +90,8 @@ pub async fn get_version_index(slot:u64) {
     };
 
     let index1 = get_index(VERCLIENT1_ID).await.to_string().parse().unwrap_or(0);
-    let index2 = get_index(VERCLIENT1_ID).await.to_string().parse().unwrap_or(0);
-    let index3 = get_index(VERCLIENT1_ID).await.to_string().parse().unwrap_or(0);
+    let index2 = get_index(VERCLIENT2_ID).await.to_string().parse().unwrap_or(0);
+    let index3 = get_index(VERCLIENT3_ID).await.to_string().parse().unwrap_or(0);
     println!("slot: {} verclient1: {}, verclient2: {}, verclient3: {} ",slot, index1, index2, index3);
 
     let data = json!({
@@ -236,10 +237,15 @@ pub async fn submit_TEEverify_transaction(slot:u64, elf_id: String) -> String {
     let contract =  VerifiableClientDiversity::new(contract_addr, provider);
     let image_id_bytes = alloy_primitives::FixedBytes::from_str(elf_id.as_str()).unwrap();
     let journal_digest_bytes = alloy_primitives::FixedBytes::from_str("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa").unwrap();
-    let filebytes: Vec<u8> = fs::read("/root/quote-1.dat")
+    let filebytes: Vec<u8> = fs::read("/quote-1.dat")
         .await
         .expect("read quote-1.dat failed");
     let seal_bytes: Bytes = Bytes::from(filebytes);
+    let filebytes1: Vec<u8> = fs::read("/quote-1.dat")
+        .await
+        .expect("read quote-1.dat failed");
+    let seal_bytes1: Bytes = Bytes::from(filebytes1);
+    println!("seal_bytes: 0x{}", encode(seal_bytes1));
     let slot_u256 = U256::from(slot);
 
     let call_builder = contract.submitProof(slot_u256, seal_bytes, image_id_bytes, journal_digest_bytes);
