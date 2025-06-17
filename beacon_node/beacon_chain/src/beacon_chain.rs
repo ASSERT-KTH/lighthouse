@@ -129,11 +129,6 @@ use types::blob_sidecar::FixedBlobSidecarList;
 use types::data_column_sidecar::{ColumnIndex, DataColumnIdentifier};
 use types::payload::BlockProductionVersion;
 use types::*;
-// use hzys_produce_attestation::{set_finalized_slot,set_headslot,set_beacon_block_root,set_beacon_state_root,set_beacon_block_root_head,set_target_block_root,set_head_epoch,set_head_current_epoch_attesting_info,set_attester_cache_key,set_block_execution_status,set_cachevalue,ATTESTATION_BASE, Slot as HzysSlot,Epoch as HzysEpoch, Checkpoint as HzysCheckpoint};
-use hzys_produce_attestation::{hzys_produce_unaggregated_attestation,Electra_enabled, CACHE_ITEM,ATTESTATION_BASE,Slot as HzysSlot,Epoch as HzysEpoch, Checkpoint as HzysCheckpoint,EarlyAttesterCache as HzysEarlyAttesterCache,CommitteeIndex,AttestationBase,HeadBeaconState,HEADBEACONSTATE,ATTESTER_CACHE_KEY};
-use host::{attestation_execute_proof,submit_RISC0verify_transaction,submit_TEEverify_transaction,get_minority_version};
-use hzysthreadspool::GLOBAL_THREAD_POOL;
-use hzyscache::{check_duplicate_call,clear_call_hash_cache};
 
 pub type ForkChoiceError = fork_choice::Error<crate::ForkChoiceStoreError>;
 
@@ -1800,76 +1795,11 @@ impl<T: BeaconChainTypes> BeaconChain<T> {
     /// ## Errors
     ///
     /// May return an error if the `request_slot` is too far behind the head state.
-    pub fn produce_unaggregated_attestation(
+pub fn produce_unaggregated_attestation(
         &self,
         request_slot: Slot,
         request_index: CommitteeIndex,
     ) -> Result<Attestation<T::EthSpec>, Error> {
-
-        println!("hzysdebuginfo: lighthousefunc-produce_unaggregated_attestation");
-        println!("hzysdebuginfo: slot: {}, index: {}",request_slot,request_index);
-
-        let prooftask = move || {
-            let context_early_attester_cache = CACHE_ITEM.with(|cache_item| {
-                let cache_item_ref = cache_item.borrow().clone(); // 获取 RefCell 的不可变引用并克隆
-                HzysEarlyAttesterCache {
-                    item: Some(cache_item_ref),
-                }
-            });
-
-            let context_sepc_flag= Electra_enabled.with(|flag| {
-                let flag_ref = flag.borrow().clone(); // 获取 RefCell 的不可变引用并克隆
-                flag_ref
-            });
-
-            let context_attestation_base= ATTESTATION_BASE.with(|base| {
-                let base_ref = base.borrow().clone(); // 获取 RefCell 的不可变引用并克隆
-                base_ref
-            });
-
-            let context_beacon_state=HEADBEACONSTATE.with(|base| {
-                let base_ref = base.borrow().clone();
-                base_ref
-            });
-
-            let context_attester_cache_key =  ATTESTER_CACHE_KEY.with(|base| {
-                let base_ref = base.borrow().clone();
-                base_ref
-            });
-            if check_duplicate_call(HzysSlot::new(request_slot.value()), request_index, context_early_attester_cache.clone(),  context_sepc_flag, context_attestation_base.clone(), context_beacon_state.clone(), context_attester_cache_key.clone()) {
-                    println!("hzysdebuginfo: Duplicate call detected, skipping attestation production.");
-                    return;// 显式返回 Ok(None)
-                }
-            tokio::runtime::Runtime::new().unwrap().block_on(async move {
-                 let p = match attestation_execute_proof(HzysSlot::new(request_slot.value()),
-                 request_index,
-                 context_early_attester_cache,
-                 context_sepc_flag,
-                 context_attestation_base,
-                 context_beacon_state,
-                 context_attester_cache_key
-                ).await {
-                    Ok(proof) => {
-                        println!("Proof executed successfully");
-                        println!("Submitting transaction to proof");
-                        let tx_hash = submit_RISC0verify_transaction(request_slot.value().clone(),proof.clone()).await;
-                        println!("Published with hash {}", tx_hash);
-                        // let tx_hash1=submit_TEEverify_transaction(request_slot.value(), proof.clone().elf_id).await;
-                        // println!("\n\n\n\n TEE Transaction hash: {}\n\n\n\n ", tx_hash1);
-                        Ok(proof)
-                    }
-                    Err(e) => {
-                        eprintln!("Failed to execute proof: {}", e);
-                        Err(e)
-                    }
-                };
-            })
-        };
-
-
-        let _guard = OnDrop::new(prooftask);
-
-
         let _total_timer = metrics::start_timer(&metrics::ATTESTATION_PRODUCTION_SECONDS);
 
         // The early attester cache will return `Some(attestation)` in the scenario where there is a
@@ -1922,7 +1852,7 @@ impl<T: BeaconChainTypes> BeaconChain<T> {
             let head = self.head_snapshot();
             let head_state = &head.beacon_state;
             head_state_slot = head_state.slot();
-            // The head state is the state at the current head of the chain. It is used to
+
             // There is no value in producing an attestation to a block that is pre-finalization and
             // it is likely to cause expensive and pointless reads to the freezer database. Exit
             // early if this is the case.
@@ -1930,9 +1860,6 @@ impl<T: BeaconChainTypes> BeaconChain<T> {
                 .finalized_checkpoint()
                 .epoch
                 .start_slot(slots_per_epoch);
-
-            hzys_produce_attestation::set_finalized_slot(HzysSlot(finalized_slot.value()));
-
             if request_slot < finalized_slot {
                 return Err(Error::AttestingToFinalizedSlot {
                     finalized_slot,
@@ -1946,9 +1873,6 @@ impl<T: BeaconChainTypes> BeaconChain<T> {
             let slots_per_historical_root = T::EthSpec::slots_per_historical_root() as u64;
             let lowest_permissible_slot =
                 head_state.slot().saturating_sub(slots_per_historical_root);
-
-            hzys_produce_attestation::set_headslot(HzysSlot(head_state.slot().value()));
-
             if request_slot < lowest_permissible_slot {
                 return Err(Error::AttestingToAncientSlot {
                     lowest_permissible_slot,
@@ -1967,42 +1891,29 @@ impl<T: BeaconChainTypes> BeaconChain<T> {
                 beacon_state_root = *head_state.get_state_root(request_slot)?;
             };
 
-            hzys_produce_attestation::set_beacon_block_root_head(beacon_block_root.0);
-            hzys_produce_attestation::set_beacon_state_root(beacon_state_root.0);
-
             let target_slot = request_epoch.start_slot(T::EthSpec::slots_per_epoch());
             let target_root = if head_state.slot() <= target_slot {
                 // If the state is earlier than the target slot then the target *must* be the head
                 // block root.
                 beacon_block_root
             } else {
-                let block_root = *head_state.get_block_root(target_slot)?;
-                hzys_produce_attestation::set_target_block_root(block_root.0);
-                block_root
+                *head_state.get_block_root(target_slot)?
             };
-
-
             target = Checkpoint {
                 epoch: request_epoch,
                 root: target_root,
             };
 
-            hzys_produce_attestation::set_head_epoch(HzysEpoch(head_state.current_epoch().value()));
-
             current_epoch_attesting_info = if head_state.current_epoch() == request_epoch {
                 // When the head state is in the same epoch as the request, all the information
                 // required to attest is available on the head state.
-                let p1=head_state.current_justified_checkpoint();
-                let p2= head_state
-                .get_beacon_committee(request_slot, request_index)?
-                .committee
-                .len();
-
-                let hzyscheckpoint = HzysCheckpoint::new(HzysEpoch::new(p1.epoch.value()), p1.root.0);
-
-                hzys_produce_attestation::set_head_current_epoch_attesting_info(Some((hzyscheckpoint,p2)));
-
-                Some((p1,p2,))
+                Some((
+                    head_state.current_justified_checkpoint(),
+                    head_state
+                        .get_beacon_committee(request_slot, request_index)?
+                        .committee
+                        .len(),
+                ))
             } else {
                 // If the head state is in a *different* epoch to the request, more work is required
                 // to determine the justified checkpoint and committee length.
@@ -2013,13 +1924,8 @@ impl<T: BeaconChainTypes> BeaconChain<T> {
             // routine.
             attester_cache_key =
                 AttesterCacheKey::new(request_epoch, head_state, beacon_block_root)?;
-
-            hzys_produce_attestation::set_attester_cache_key(HzysEpoch::new(attester_cache_key.epoch().value()), attester_cache_key.decision_root().0);
-
         }
         drop(head_timer);
-
-
 
         // Only attest to a block if it is fully verified (i.e. not optimistic or invalid).
         match self
@@ -2027,11 +1933,8 @@ impl<T: BeaconChainTypes> BeaconChain<T> {
             .fork_choice_read_lock()
             .get_block_execution_status(&beacon_block_root)
         {
-            Some(execution_status) if execution_status.is_valid_or_irrelevant() => {
-                hzys_produce_attestation::set_block_execution_status(Some(execution_status.to_hzys_execution_status()));
-            }
+            Some(execution_status) if execution_status.is_valid_or_irrelevant() => (),
             Some(execution_status) => {
-                hzys_produce_attestation::set_block_execution_status(Some(execution_status.to_hzys_execution_status()));
                 return Err(Error::HeadBlockNotFullyVerified {
                     beacon_block_root,
                     execution_status,
@@ -2087,9 +1990,7 @@ impl<T: BeaconChainTypes> BeaconChain<T> {
             };
         drop(cache_timer);
 
-        hzys_produce_attestation::set_cachevalue(Some((justified_checkpoint.convert_checkpoint(),committee_len)));
-
-        let attestation = Attestation::<T::EthSpec>::empty_for_signing(
+        Ok(Attestation::<T::EthSpec>::empty_for_signing(
             request_index,
             committee_len,
             request_slot,
@@ -2097,46 +1998,7 @@ impl<T: BeaconChainTypes> BeaconChain<T> {
             justified_checkpoint,
             target,
             &self.spec,
-        )?;
-
-        if self.spec.fork_name_at_slot::<T::EthSpec>(request_slot).electra_enabled() {
-            ATTESTATION_BASE.with(|base| {
-                let committee_bits_vec: Vec<bool> = match &attestation {
-                    Attestation::Base(_base) => vec![],
-                    Attestation::Electra(electra) => electra.committee_bits.iter().collect::<Vec<_>>(),
-                };
-                base.borrow_mut().eelectra_committee_bits = committee_bits_vec;
-            });
-        }
-
-        ATTESTATION_BASE.with(|base| {
-            let aggregation_bits_vec: Vec<bool> = match &attestation {
-                Attestation::Base(base) => base.aggregation_bits.iter().collect(),
-                Attestation::Electra(electra) => electra.aggregation_bits.iter().collect(),
-            };
-            base.borrow_mut().aggregation_bits = aggregation_bits_vec;
-        });
-
-        ATTESTATION_BASE.with(|base| {
-            let signature:Vec<u8> = match &attestation {
-                Attestation::Base(base) => base.signature.serialize().to_vec(),
-                Attestation::Electra(electra) => electra.signature.serialize().to_vec(),
-            };
-            base.borrow_mut().signature = signature;
-        });
-
-        ATTESTATION_BASE.with(|base| {
-            let data = attestation.data();
-            base.borrow_mut().data.slot =  HzysSlot(data.slot.value());
-            base.borrow_mut().data.index = data.index;
-            base.borrow_mut().data.beacon_block_root = data.beacon_block_root.0;
-            base.borrow_mut().data.source.epoch = HzysEpoch(data.source.epoch.value());
-            base.borrow_mut().data.source.root = data.source.root.0;
-            base.borrow_mut().data.target.epoch = HzysEpoch(data.target.epoch.value());
-            base.borrow_mut().data.target.root = data.target.root.0;
-        });
-
-        Ok(attestation)
+        )?)
     }
 
     /// Performs the same validation as `Self::verify_unaggregated_attestation_for_gossip`, but for
@@ -7332,30 +7194,6 @@ impl ChainSegmentResult {
         match self {
             ChainSegmentResult::Failed { error, .. } => Err(error),
             ChainSegmentResult::Successful { .. } => Ok(()),
-        }
-    }
-}
-
-pub struct OnDrop<F: FnOnce() + Send + 'static>(Option<F>);
-
-impl<F: FnOnce() + Send + 'static> OnDrop<F> {
-    pub fn new(f: F) -> Self {
-        OnDrop(Some(f))
-    }
-}
-
-impl<F: FnOnce() + Send + 'static> Drop for OnDrop<F> {
-    fn drop(&mut self) {
-        if let Some(f) = self.0.take() {
-            match GLOBAL_THREAD_POOL.try_execute(f) {
-                Ok(()) => {}
-                Err(TrySendError::Full(_)) => {
-                    eprintln!("Queue is full, task discarded.");
-                }
-                Err(TrySendError::Disconnected(_)) => {
-                    eprintln!("Channel disconnected, task discarded.");
-                }
-            }
         }
     }
 }

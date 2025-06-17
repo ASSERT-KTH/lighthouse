@@ -1,35 +1,25 @@
-// use blst::min_pk::SecretKey;
+use blst::min_pk::SecretKey;
 use risc0_zkvm::guest::env;
-use hzys_produce_attestation::{hzys_produce_unaggregated_attestation,Electra_enabled, CACHE_ITEM,ATTESTATION_BASE,Slot as HzysSlot,EarlyAttesterCache,AttestationBase,HeadBeaconState,AttesterCacheKey};
 
 fn main() {
-    let start = env::cycle_count();
-    let mut Hzys_slot:HzysSlot=env::read();
-    let mut Hzys_requestindex:u64=env::read();
-    let mut Hzys_early_attester_cache:EarlyAttesterCache=env::read();
+    let _nonce = 1;
 
-    let mut Hzys_spec_flag:bool=env::read();
-    let mut Hys_attestation:AttestationBase=env::read();
-    let mut Hys_beaconstate:HeadBeaconState=env::read();
-    let mut Hys_attester_cache_key:AttesterCacheKey=env::read();
+    let mut intro = [0u8; 4];
+    env::read_slice(&mut intro);
 
+    let mut secret_key = [0u8; 32];
+    env::read_slice(&mut secret_key);
 
-    let v1: u64 = 1;
-    let mut tmp: u64 = 0;
-    if v1== 1 {
-        tmp=v1;
-    }
-    hzys_produce_unaggregated_attestation(Hzys_slot,
-    Hzys_requestindex,
-    &Hzys_early_attester_cache,
-    Hzys_spec_flag,
-    &Hys_attestation,
-    &Hys_beaconstate,
-    &Hys_attester_cache_key
-    );
+    let mut msg = [0u8; 32];
+    env::read_slice(&mut msg);
 
-    let end = env::cycle_count();
-    env::commit(&Hzys_spec_flag);
-    eprintln!("my_operation_to_measure: {}", end - start);
+    let sk = SecretKey::from_bytes(&secret_key).unwrap();
+
+    let dst = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
+
+    let sig = sk.sign(&msg, dst, &[]);
+
+    let serialized = sig.to_bytes();
+
+    env::commit_slice(&serialized);
 }
-
