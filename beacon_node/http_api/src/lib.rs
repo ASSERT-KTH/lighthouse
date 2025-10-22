@@ -3315,9 +3315,15 @@ pub fn serve<T: BeaconChainTypes>(
                     }
                     println!("\n\n===============\n\nquery.slot: {:?}, query.committee_index: {:?}\n\n===============\n\n", query.slot,query.committee_index);
 
-                    chain
-                        .produce_unaggregated_attestation(query.slot, query.committee_index)
-                        .map(|attestation| attestation.data().clone())
+                    let start = std::time::Instant::now();
+                    let x = chain
+                        .produce_unaggregated_attestation(query.slot, query.committee_index);
+
+                    let duration = start.elapsed();
+
+                    println!("time to produce attestation: {}", duration.as_micros());
+
+                    x.map(|attestation| attestation.data().clone())
                         .map(api_types::GenericResponse::from)
                         .map_err(warp_utils::reject::beacon_chain_error)
                 })

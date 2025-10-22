@@ -3,7 +3,7 @@ use crate::attestation_verification::{
     Error as AttestationError, VerifiedAggregatedAttestation, VerifiedAttestation,
     VerifiedUnaggregatedAttestation,
 };
-use crate::attester_cache::{AttesterCache, AttesterCacheKey, AttesterCacheValue};
+use crate::attester_cache::{AttesterCache, AttesterCacheKey};
 use crate::beacon_block_streamer::{BeaconBlockStreamer, CheckCaches};
 use crate::beacon_proposer_cache::compute_proposer_duties_from_head;
 use crate::beacon_proposer_cache::BeaconProposerCache;
@@ -121,9 +121,7 @@ use store::{
 };
 use task_executor::{ShutdownReason, TaskExecutor};
 use tokio::sync::mpsc::Receiver;
-use std::sync::mpsc::TrySendError;
 use tokio_stream::Stream;
-use tokio::task;
 use tree_hash::TreeHash;
 use types::blob_sidecar::FixedBlobSidecarList;
 use types::data_column_sidecar::{ColumnIndex, DataColumnIdentifier};

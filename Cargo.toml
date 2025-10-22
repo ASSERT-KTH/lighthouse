@@ -1,11 +1,6 @@
 [workspace]
 members = [
     "host",
-    "methods",
-    "hzys_produce_attestation",
-    "hzystest",
-    "hzysthreadspool",
-    "hzyscache",
 
     "beacon_node",
     "beacon_node/beacon_chain",
@@ -279,10 +274,6 @@ warp_utils = { path = "common/warp_utils" }
 xdelta3 = { git = "http://github.com/sigp/xdelta3-rs", rev = "50d63cdf1878e5cf3538e9aae5eed34a22c64e4a" }
 zstd = "0.13"
 host = { path = "./host" }
-hzys_produce_attestation = { path = "./hzys_produce_attestation" }
-hzystest = { path = "./hzystest" }
-hzysthreadspool = { path = "./hzysthreadspool" }
-hzyscache = { path = "./hzyscache" }
 
 [profile.maxperf]
 inherits = "release"

@@ -7,16 +7,14 @@ use eth2_keystore::Keystore;
 use lockfile::Lockfile;
 use parking_lot::Mutex;
 use reqwest::{header::ACCEPT, Client};
-use std::path::PathBuf;
-use tokio::task;
+use std::{path::PathBuf, time::Instant};
 use std::sync::Arc;
 use task_executor::TaskExecutor;
 use types::*;
 use url::Url;
 use web3signer::{ForkInfo, SigningRequest, SigningResponse};
-use host::{execute_proof, submit_RISC0verify_transaction};
-use serde::Serialize;
-use serde::Deserialize;
+use host::{execute_in_tee, submit_TEEverify_transaction};
+use tokio::task;
 
 pub use web3signer::Web3SignerObject;
 
@@ -179,43 +177,39 @@ impl SigningMethod {
                 // Spawn a blocking task to produce the signature. This avoids blocking the core
                 // tokio executor.
 
-                 if let SignableMessage::BeaconBlock(_block) = signable_message {
-                     let sk_bytes = voting_keypair.sk.serialize();
 
-                     // let callback: Callback = Arc::new(|message: String| {
-                     //     println!("Callback received {}", message);
-                     // });
+                if let SignableMessage::BeaconBlock(_block) = signable_message {
+                    let sk_bytes = voting_keypair.sk.serialize();
+                    let block_number = _block.slot().as_u64();
 
-                    let _task = move || {
-
-                     //task::spawn(async move {
-                     tokio::runtime::Runtime::new().unwrap().block_on( async move {
+                    // let callback: Callback = Arc::new(|message: String| {
+                    //     println!("Callback received {}", message);
+                    // });
+                    task::spawn(async move {
                         let sk = sk_bytes.as_bytes();
-                         // TODO: Here we can spawn a parallel process for signature proving!
+                        // TODO: Here we can spawn a parallel process for signature proving!
 
-                         let p = match execute_proof(sk, &signing_root).await {
-                             Ok(proof) => {
-                                 println!("Proof executed successfully");
-                                 Ok(proof)
-                             }
-                             Err(e) => {
-                                 eprintln!("Failed to execute proof: {}", e);
-                                 Err(e)
-                             }
-                         };
+                        let p = match execute_in_tee(sk, &signing_root).await {
+                            Ok(proof) => {
+                                println!("Proof executed successfully");
+                                Ok(proof)
+                            }
+                            Err(e) => {
+                                eprintln!("Failed to execute proof: {}", e);
+                                Err(e)
+                            }
+                        };
 
-                         let proof = p.unwrap();
+                        let proof = p.unwrap();
 
-                         let tx_hash = submit_RISC0verify_transaction(_block.slot().as_u64(), proof).await;
-                         println!("submitted verification with tx_hash: {}", tx_hash);
+                        let tx_hash = submit_TEEverify_transaction(block_number, proof).await;
+                        println!("submitted verification with tx_hash: {}", tx_hash);
 
-                     });
-
-
-                    };
+                    });
+                }
 
 
-                 }
+                let start = Instant::now();
 
                 let signature = executor
                     .spawn_blocking_handle(
@@ -225,6 +219,11 @@ impl SigningMethod {
                     .ok_or(Error::ShuttingDown)?
                     .await
                     .map_err(|e| Error::TokioJoin(e.to_string()))?;
+
+                let duration = start.elapsed();
+
+                println!("time elapsed signature: {}", duration.as_millis());
+
                 Ok(signature)
             }
             SigningMethod::Web3Signer {

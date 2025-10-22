@@ -23,8 +23,6 @@ use types::{
     Hash256, RelativeEpoch, Slot,
 };
 
-use hzys_produce_attestation;
-
 type JustifiedCheckpoint = Checkpoint;
 type CommitteeLength = usize;
 type CommitteeIndex = u64;
@@ -152,14 +150,6 @@ impl CommitteeLengths {
             .ok_or(Error::InverseRange { range })
     }
 
-    fn convert_committee_lengths(
-        &self,
-    ) -> hzys_produce_attestation::CommitteeLengths {
-        hzys_produce_attestation::CommitteeLengths {
-            epoch: hzys_produce_attestation::Epoch(self.epoch.value()),
-            active_validator_indices_len: self.active_validator_indices_len,
-        }
-    }
 }
 
 /// Provides the following information for some epoch:
@@ -194,15 +184,6 @@ impl AttesterCacheValue {
         self.committee_lengths
             .get_committee_length::<E>(slot, committee_index, spec)
             .map(|committee_length| (self.current_justified_checkpoint, committee_length))
-    }
-
-    fn convert_attester_cache_value(
-        &self,
-    ) -> hzys_produce_attestation::AttesterCacheValue {
-        hzys_produce_attestation::AttesterCacheValue {
-            current_justified_checkpoint:self.current_justified_checkpoint.convert_checkpoint(),
-            committee_lengths: self.committee_lengths.convert_committee_lengths(),
-        }
     }
 }
 
@@ -262,22 +243,6 @@ impl AttesterCacheKey {
             epoch,
             decision_root,
         })
-    }
-
-    pub fn epoch(&self) -> Epoch {
-        self.epoch
-    }
-
-    /// Get the decision root of the cache key.
-    pub fn decision_root(&self) -> Hash256 {
-        self.decision_root
-    }
-
-    fn convert_attester_cache_key(&self) -> hzys_produce_attestation::AttesterCacheKey {
-        hzys_produce_attestation::AttesterCacheKey {
-            epoch: hzys_produce_attestation::Epoch(self.epoch.value()),
-            decision_root: self.decision_root.0,
-        }
     }
 }
 
@@ -418,20 +383,5 @@ impl AttesterCache {
     /// Generally, the provided `epoch` should be the finalized epoch.
     pub fn prune_below(&self, epoch: Epoch) {
         self.cache.write().retain(|target, _| target.epoch >= epoch);
-    }
-
-    fn convert_attester_cache(
-        &self
-    ) -> hzys_produce_attestation::AttesterCache {
-        let lighthouse_cache = self.cache.read(); // 获取读锁
-        let mut converted_cache = HashMap::new();
-
-        for (key, value) in lighthouse_cache.iter() {
-            let converted_key = key.convert_attester_cache_key();
-            let converted_value = value.convert_attester_cache_value();
-            converted_cache.insert(converted_key, converted_value);
-        }
-
-        hzys_produce_attestation::AttesterCache::new(converted_cache)
     }
 }

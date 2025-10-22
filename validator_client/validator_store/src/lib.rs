@@ -578,7 +578,8 @@ impl<T: SlotClock + 'static, E: EthSpec> ValidatorStore<T, E> {
         block: BeaconBlock<E, Payload>,
         current_slot: Slot,
     ) -> Result<SignedBeaconBlock<E, Payload>, Error> {
-        // Make sure the block slot is not higher than the current slot to avoid potential attacks.
+       // Make sure the block slot is not higher than the current slot to avoid potential attacks.
+        println!("+++++++++++++++++++++++SIGN_BLOCK+++++++++++++++++++++++");
         if block.slot() > current_slot {
             warn!(
                 self.log,
@@ -619,6 +620,7 @@ impl<T: SlotClock + 'static, E: EthSpec> ValidatorStore<T, E> {
                     &[validator_metrics::SUCCESS],
                 );
 
+                println!("+++++++++++++++++++++++GET_SIGNATURE+++++++++++++++++++++++");
                 let signature = signing_method
                     .get_signature::<E, Payload>(
                         SignableMessage::BeaconBlock(&block),

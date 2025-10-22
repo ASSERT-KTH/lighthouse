@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-methods = { path = "../methods" }
 tokio = { workspace = true }
 risc0-ethereum-contracts = { version = "=1.2.1" }
 risc0-zkvm = { version = "=1.2.1" }
@@ -22,9 +21,7 @@ alloy-chains = {version = "0.2.0"}
 alloy = { workspace = true }
 alloy-primitives = { workspace = true }
 url = { workspace = true }
-state_processing = { workspace = true }
 # beacon_chain = { workspace = true }
 bls = { workspace = true }
-types = { workspace = true }
-hzys_produce_attestation = {path ="../hzys_produce_attestation"}
 lazy_static = "1.4"
+reqwest = { version = "0.12.20", features = ["json"] }
