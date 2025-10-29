@@ -6,13 +6,14 @@ edition = "2021"
 [features]
 # The `tstd_enclave` feature is requested by the automata_sgx_sdk
 tstd_enclave = ["automata-sgx-sdk/tstd_enclave"]
+default = ["exclude"]
 
 [lib]
 name = "enclave"
 crate-type = ["staticlib"]
 
 [dependencies]
-automata-sgx-sdk = { git = "https://github.com/automata-network/automata-sgx-sdk", branch = "main" }
+automata-sgx-sdk = { git = "https://github.com/javierron/automata-sgx-sdk", branch = "main" }
 # Use external libraries in the enclave
 # serde = { version = "1", features = ["derive"] }
 # serde_json = { version = "1" }

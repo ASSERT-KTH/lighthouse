@@ -99,6 +99,7 @@ members = [
 
     "watch",
     "enclave",
+    "sgx_sign",
 ]
 resolver = "2"
 

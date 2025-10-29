@@ -332,6 +332,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4c95c10ba0b00a02636238b814946408b1322d5ac4760326e6fb8ec956d85775"
 
 [[package]]
+name = "app-template"
+version = "0.1.0"
+dependencies = [
+ "automata-build-script",
+ "automata-sgx-sdk",
+]
+
+[[package]]
 name = "arbitrary"
 version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -658,9 +666,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
 
 [[package]]
+name = "automata-build-script"
+version = "0.1.0"
+source = "git+https://github.com/javierron/automata-sgx-sdk?branch=main#8290146eb53f04a6dfcb38be4f7192c65abbf8cd"
+dependencies = [
+ "cc",
+ "serde",
+ "serde_json",
+ "toml 0.8.19",
+]
+
+[[package]]
 name = "automata-sgx-sdk"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-sgx-sdk?branch=main#939894eae22d14200318c021e9c3b89f976eb2ca"
+source = "git+https://github.com/javierron/automata-sgx-sdk?branch=main#8290146eb53f04a6dfcb38be4f7192c65abbf8cd"
 dependencies = [
  "automata-sgx-sdk-sysroot",
  "base",
@@ -672,12 +691,13 @@ dependencies = [
  "sgx_libc",
  "sgx_tse",
  "sgx_types",
+ "sgx_urts",
 ]
 
 [[package]]
 name = "automata-sgx-sdk-sysroot"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-sgx-sdk?branch=main#939894eae22d14200318c021e9c3b89f976eb2ca"
+source = "git+https://github.com/javierron/automata-sgx-sdk?branch=main#8290146eb53f04a6dfcb38be4f7192c65abbf8cd"
 
 [[package]]
 name = "axum"
@@ -4861,7 +4881,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4979f22fdb869068da03c9f7528f8297c6fd2606bc3a4affe42e6a823fdb8da4"
 dependencies = [
  "cfg-if",
- "windows-targets 0.52.6",
+ "windows-targets 0.48.5",
 ]
 
 [[package]]
@@ -8111,6 +8131,25 @@ dependencies = [
 name = "sgx_types"
 version = "2.0.0"
 source = "git+https://github.com/automata-network/incubator-teaclave-sgx-sdk?branch=2.24_nightly_2024-02-01#2e0b563d535af92719c00b367c005f90d6a0a430"
+
+[[package]]
+name = "sgx_uprotected_fs"
+version = "2.0.0"
+source = "git+https://github.com/automata-network/incubator-teaclave-sgx-sdk?branch=2.24_nightly_2024-02-01#2e0b563d535af92719c00b367c005f90d6a0a430"
+dependencies = [
+ "libc",
+ "sgx_types",
+]
+
+[[package]]
+name = "sgx_urts"
+version = "2.0.0"
+source = "git+https://github.com/automata-network/incubator-teaclave-sgx-sdk?branch=2.24_nightly_2024-02-01#2e0b563d535af92719c00b367c005f90d6a0a430"
+dependencies = [
+ "libc",
+ "sgx_types",
+ "sgx_uprotected_fs",
+]
 
 [[package]]
 name = "sha1"

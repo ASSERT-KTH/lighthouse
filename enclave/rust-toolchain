@@ -1,1 +1,2 @@
 nightly-2024-07-31
+automata-sgx-sdk = { git = "https://github.com/automata-network/automata-sgx-sdk", branch = "main" }
